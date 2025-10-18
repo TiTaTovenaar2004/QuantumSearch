@@ -3,16 +3,20 @@ import math
 from matplotlib import pyplot as plt
 from qutip import *
 from matplotlib.animation import FuncAnimation
+import networkx as nx
 
 # --- Choose parameter values ---
-N = 5 # Number of sites in the complete graph
+output = 'occupations' # 'state' or 'occupations'
+N = 3 # Number of sites in the complete graph
 marked_vertex = 0
 M = 2 # Number of bosons
 dim_per_site = M + 1 # Dimension of the Hilbert space per site
 hopping_rate = 1 / N # Critical hopping rate for complete graph
 T = 240 # Total time for the simulation
-number_of_time_steps = 240
-graph = 'cycle' # 'complete', 'cycle' or 'line'
+number_of_time_steps = 240 # Number of time steps in the simulation
+graph = 'complete' # 'complete', 'cycle', 'line', 'erdos_renyi', 'barabasi_albert'
+p = 0.5 # Parameter for Erdős-Rényi graph
+m = 2 # Parameter for Barabási-Albert graph
 
 # --- Define creation and annihilation operators ---
 def creation_operator(site, N): # N is the number of sites
@@ -58,22 +62,23 @@ init_state = ((uniform_creation_operator(N) ** M) / np.sqrt(math.factorial(M))) 
 
 # --- Construct the graph ---
 if graph == 'complete':
-    adjacency_matrix = np.ones((N, N)) - np.eye(N)
+    G = nx.complete_graph(N)
 elif graph == 'cycle':
-    adjacency_matrix = np.zeros((N, N))
-    for i in range(N-1):
-        adjacency_matrix[i, i+1] = 1
-        adjacency_matrix[i+1, i] = 1
-
-    adjacency_matrix[0, N-1] = 1
-    adjacency_matrix[N-1, 0] = 1
+    G = nx.cycle_graph(N)
 elif graph == 'line':
-    adjacency_matrix = np.zeros((N, N))
-    for i in range(N-1):
-        adjacency_matrix[i, i+1] = 1
-        adjacency_matrix[i+1, i] = 1
+    G = nx.path_graph(N)
+elif graph == 'erdos_renyi':
+    G = nx.erdos_renyi_graph(N, p)
+    while not nx.is_connected(G): # Ensure the graph is connected
+        G = nx.erdos_renyi_graph(N, p)
+elif graph == 'barabasi_albert':
+    G = nx.barabasi_albert_graph(N, m)
+    while not nx.is_connected(G): # Ensure the graph is connected
+        G = nx.barabasi_albert_graph(N, m)        
 else:
-    raise ValueError("Graph must be 'complete', 'cycle' or 'line'")
+    raise ValueError("Graph must be 'complete', 'cycle', 'line', 'erdos_renyi' or 'barabasi_albert'")
+
+adjacency_matrix = nx.to_numpy_array(G)
 
 # --- Construct the Hamiltonian ---
 H = 0
@@ -86,9 +91,14 @@ H += -creation_operator(marked_vertex, N) * annihilation_operator(marked_vertex,
 
 # --- Time evolution ---
 times = np.linspace(0, T, number_of_time_steps)
-number_operators = [number_operator(i, N) for i in range(N)]
-result = sesolve(H, init_state, times, e_ops = number_operators)
-result_states = sesolve(H, init_state, times)
+
+if output == 'state':
+    result = sesolve(H, init_state, times)
+elif output == 'occupations':
+    number_operators = [number_operator(i, N) for i in range(N)]
+    result = sesolve(H, init_state, times, e_ops = number_operators)
+else:
+    raise ValueError("Output must be 'state' or 'occupations'")
 
 # --- Plot site populations ---
 def plot_site_populations(result):
