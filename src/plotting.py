@@ -32,16 +32,14 @@ def plot_site_populations(result, params):
     # --- Rescale x-axis ticks ---
     # Get current x-ticks (these correspond to index positions, not actual times)
     ax = plt.gca()
-    num_steps = number_of_time_steps  # from your global variable
+    num_steps = number_of_time_steps 
     scale_factor = (num_steps / T) * N
 
     # Compute new tick positions corresponding to multiples of pi
-    # Let’s cover the full time range
     max_pi = int(np.floor(T * math.pi / (T / N)))  # a rough upper bound
     max_tick = number_of_time_steps
     pi_ticks = np.arange(0, max_tick, int(scale_factor * math.pi))
 
-    # Simpler, consistent with your request: 0, pi, 2pi, 3pi...
     xtick_labels = [rf'{i}$\pi$' if i > 0 else '0' for i in range(len(pi_ticks))]
     plt.xticks(pi_ticks, xtick_labels)
 
@@ -49,7 +47,12 @@ def plot_site_populations(result, params):
     plt.show()
 
 # --- Plot marked vertex occupation distribution ---
-def plot_marked_vertex_occupation_distribution(state): # Plots the occupation distribution of the marked vertex at time T
+def plot_marked_vertex_occupation_distribution(state, params): # Plots the occupation distribution of the marked vertex at time T
+    # Unpack parameters
+    N = params['N']
+    dim_per_site = params['dim_per_site']
+    marked_vertex = params['marked_vertex']
+    
     probs = np.zeros(dim_per_site)
 
     # Loop over all possible occupation numbers for the marked vertex
@@ -78,11 +81,16 @@ def plot_marked_vertex_occupation_distribution(state): # Plots the occupation di
     plt.show()
 
 # --- Animate marked vertex occupation distribution ---
-def animate_marked_vertex_distribution(states, times):
+def animate_marked_vertex_distribution(states, times, params):
     """
     Create an animation showing the probability distribution of finding k bosons
     on the marked vertex as a function of time.
     """
+
+    # Unpack parameters
+    N = params['N']
+    dim_per_site = params['dim_per_site']
+    marked_vertex = params['marked_vertex']
 
     # Precompute probabilities P_k(t) for all times
     probs_time = np.zeros((len(times), dim_per_site))

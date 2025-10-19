@@ -7,4 +7,10 @@ import networkx as nx
 
 from bosonic_search import bosonic_search
 from fermionic_search import fermionic_search
-from plotting import plot_site_populations
+from plotting import plot_site_populations, plot_marked_vertex_occupation_distribution, animate_marked_vertex_distribution
+
+result, times, G, params = bosonic_search(N=4, M=4, output='states', graph='cycle')
+
+# plot_marked_vertex_occupation_distribution(result.states[-1], params)
+
+# animate_marked_vertex_distribution(result.states, times, params)

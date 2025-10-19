@@ -8,7 +8,7 @@ import networkx as nx
 def fermionic_search(
     N, # Number of sites in the graph
     M, # Number of fermions
-    output = 'occupations', # 'state' or 'occupations'
+    output = 'occupations', # 'states' or 'occupations'
     T = 200, # Total time for the simulation
     number_of_time_steps = 200, # Number of time steps in the simulation
     graph = 'complete', # 'complete', 'cycle', 'line', 'erdos_renyi', 'barabasi_albert'
@@ -109,12 +109,12 @@ def fermionic_search(
     # --- Time evolution ---
     times = np.linspace(0, T, number_of_time_steps)
 
-    if output == 'state':
+    if output == 'states':
         result = sesolve(H, init_state, times)
     elif output == 'occupations':
         number_operators = [number_operator(i, N) for i in range(N)]
         result = sesolve(H, init_state, times, e_ops = number_operators)
     else:
-        raise ValueError("Output must be 'state' or 'occupations'")
+        raise ValueError("Output must be 'states' or 'occupations'")
 
     return result, times, G, params
