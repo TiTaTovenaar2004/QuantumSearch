@@ -130,3 +130,35 @@ def animate_marked_vertex_distribution(states, times, params):
     plt.show()
 
     return ani
+
+    import matplotlib.pyplot as plt
+import numpy as np
+
+# --- Plot success probabilities ---
+def plot_success_probabilities(result, times, R):
+    """
+    Plots the success probabilities as a function of time.
+
+    Parameters
+    ----------
+    result : qutip.solver.Result
+        Output from `sesolve` when `output='success probabilities'`.
+        It should contain one expectation value array per R value.
+    times : array-like
+        Array of time points corresponding to the simulation.
+    R : list[int]
+        List of the number of majority vote rounds (same as passed to `bosonic_search`).
+    """
+    plt.figure(figsize=(8, 5))
+    
+    # QuTiP stores expectation values in `result.expect`
+    for idx, r in enumerate(R):
+        plt.plot(times, result[idx], label=f"R = {r}")
+
+    plt.title("Success probability vs time")
+    plt.xlabel("Time")
+    plt.ylabel("Success probability")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()

@@ -5,10 +5,13 @@ from qutip import *
 from matplotlib.animation import FuncAnimation
 import networkx as nx
 
+from majority_vote_operator import majority_vote_operator
+
 def bosonic_search(
         N, # Number of sites in the graph
         M, # Number of bosons
-        output = 'occupations', # 'states' or 'occupations'
+        output = 'occupations', # 'states', 'occupations', 'success probabilities'
+        R = [1], # List of number of rounds of the majority vote for which to calculate the success probabilities (in ascending order!)
         T = 200, # Total time for the simulation
         number_of_time_steps = 200, # Number of time steps in the simulation
         graph = 'complete', # 'complete', 'cycle', 'line', 'erdos_renyi', 'barabasi_albert'
@@ -112,7 +115,25 @@ def bosonic_search(
     elif output == 'occupations':
         number_operators = [number_operator(i, N) for i in range(N)]
         result = sesolve(H, init_state, times, e_ops = number_operators)
+    elif output == 'success probabilities':
+        result = sesolve(H, init_state, times)
+        states = result.states
+        success_probabilities = []
+
+        # Tensoring each state R[0] times with itself, so that we can apply the R[0] rounds majority vote operator
+        total_states = [tensor([state for _ in range(R[0])]) for state in states]
+
+        for idx, r in enumerate(R):
+            op = majority_vote_operator(N, M, r, marked_vertex)
+            probs = [expect(op, total_state) for total_state in total_states]
+            success_probabilities.append(probs)
+
+            # Tensoring each state R[idx + 1] - r times with itself, so that we can apply the R[idx + 1] rounds majority vote operator
+            if idx < len(R) - 1:
+                total_states = [tensor([total_state] + [state for _ in range(R[idx + 1] - r)]) for total_state, state in zip(total_states, states)]
+
+        result = np.array(success_probabilities)
     else:
-        raise ValueError("Output must be 'states' or 'occupations'")
+        raise ValueError("Output must be 'states', 'occupations' or 'success probabilities'")
 
     return result, times, G, params
