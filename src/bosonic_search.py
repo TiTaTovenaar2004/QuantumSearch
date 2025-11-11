@@ -25,6 +25,7 @@ def bosonic_search(
     # --- Create dictionary to hold parameters ---
     params = {}
     params['output'] = output
+    params['R'] = R
     params['N'] = N
     params['M'] = M
     params['T'] = T
@@ -124,7 +125,7 @@ def bosonic_search(
         total_states = [tensor([state for _ in range(R[0])]) for state in states]
 
         for idx, r in enumerate(R):
-            op = majority_vote_operator(N, M, r, marked_vertex)
+            op = majority_vote_operator(N, M, r, marked_vertex, dim_per_site)
             probs = [expect(op, total_state) for total_state in total_states]
             success_probabilities.append(probs)
 

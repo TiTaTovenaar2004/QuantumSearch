@@ -7,8 +7,7 @@ import networkx as nx
 
 from utils import show_superposition, to_fock, distribute,distribute_with_cap
 
-def majority_vote_operator(N, M, r, marked_vertex):
-    dim_per_site = M + 1
+def majority_vote_operator(N, M, r, marked_vertex, dim_per_site):
 
     # --- Construct a projector onto states with m_1 particles on vertex i (1), ..., m_r particles on vertex i (r) ---
     def vertex_projector_specific(vertex_i, particles): # particles: tuple containing (m_1, ..., m_r)
@@ -34,7 +33,7 @@ def majority_vote_operator(N, M, r, marked_vertex):
     # --- Projector onto states where the number of particles on vertex i is less than that on vertex w ---
     def w_larger_projector(vertex_i): # particles on w > particles on vertex
         projector = 0
-        for m_total_w in range(r*M+1):
+        for m_total_w in range(r*(dim_per_site - 1) + 1):
             for m_total_i in range(m_total_w):
                 projector += vertex_projector_total(marked_vertex, m_total_w) * vertex_projector_total(vertex_i, m_total_i)
         
