@@ -17,10 +17,12 @@ def bosonic_search(
         graph = 'complete', # 'complete', 'cycle', 'line', 'erdos_renyi', 'barabasi_albert'
         marked_vertex = 0, # Vertex to be marked
         p = 0.5, # Parameter for Erdős-Rényi graph
-        m = 2 # Parameter for Barabási-Albert graph
+        m = 2, # Parameter for Barabási-Albert graph
+        hopping_rate = None # Hopping rate of the model (if None, set to critical hopping rate for complete graph)
 ):
     dim_per_site = M + 1 # Dimension of the Hilbert space per site
-    hopping_rate = 1 / N # Critical hopping rate for complete graph
+    if hopping_rate is None:
+        hopping_rate = 1 / N # Critical hopping rate for complete graph
 
     # --- Create dictionary to hold parameters ---
     params = {}
