@@ -6,38 +6,40 @@ from matplotlib.animation import FuncAnimation
 import networkx as nx
 
 from majority_vote_operator import majority_vote_operator
+from simulation import Simulation
 
 def bosonic_search(
-        N, # Number of sites in the graph
-        M, # Number of bosons
-        output = 'occupations', # 'states', 'occupations', 'success probabilities'
-        R = [1], # List of number of rounds of the majority vote for which to calculate the success probabilities (in ascending order!)
-        T = 200, # Total time for the simulation
-        number_of_time_steps = 200, # Number of time steps in the simulation
-        graph = 'complete', # 'complete', 'cycle', 'line', 'erdos_renyi', 'barabasi_albert'
-        marked_vertex = 0, # Vertex to be marked
-        p = 0.5, # Parameter for Erdős-Rényi graph
-        m = 2, # Parameter for Barabási-Albert graph
-        hopping_rate = None # Hopping rate of the model (if None, set to critical hopping rate for complete graph)
+    N, # Number of sites in the graph
+    M, # Number of fermions
+    graph_type, # 'complete', 'cycle', 'line', 'erdos_renyi', 'barabasi_albert'
+    output, # 'states', 'occupations' or 'success probabilities'
+    marked_vertex = 0, # Vertex to be marked
+    p = 0.5, # Parameter for Erdős-Rényi graph
+    m = 2, # Parameter for Barabási-Albert graph
+    hopping_rate = None, # Hopping rate of the model (if None, set to critical hopping rate for complete graph
+    T = 200, # Total time for the simulation
+    number_of_time_steps = 200, # Number of time steps in the simulation
+    R = [1] # List of number of rounds of the majority vote for which to calculate the success probabilities (in ascending order!)
 ):
     dim_per_site = M + 1 # Dimension of the Hilbert space per site
     if hopping_rate is None:
         hopping_rate = 1 / N # Critical hopping rate for complete graph
 
     # --- Create dictionary to hold parameters ---
-    params = {}
-    params['output'] = output
-    params['R'] = R
-    params['N'] = N
-    params['M'] = M
-    params['T'] = T
-    params['number_of_time_steps'] = number_of_time_steps
-    params['graph'] = graph
-    params['marked_vertex'] = marked_vertex
-    params['p'] = p
-    params['m'] = m
-    params['dim_per_site'] = dim_per_site
-    params['hopping_rate'] = hopping_rate
+        params = {
+        'N' : N,
+        'M' : M,
+        'graph type' : graph_type,
+        'output' : output,
+        'marked vertex' : marked_vertex,
+        'p' : p,
+        'm' : m,
+        'dim per site' : dim_per_site,
+        'hopping rate' : hopping_rate,
+        'T' : T,
+        'number of time steps' : number_of_time_steps,
+        'R' : R
+    }
 
     # --- Define creation and annihilation operators ---
     def creation_operator(site, N): # N is the number of sites
@@ -82,24 +84,24 @@ def bosonic_search(
     init_state = ((uniform_creation_operator(N) ** M) / np.sqrt(math.factorial(M))) * vacuum
 
     # --- Construct the graph ---
-    if graph == 'complete':
-        G = nx.complete_graph(N)
-    elif graph == 'cycle':
-        G = nx.cycle_graph(N)
-    elif graph == 'line':
-        G = nx.path_graph(N)
-    elif graph == 'erdos_renyi':
-        G = nx.erdos_renyi_graph(N, p)
-        while not nx.is_connected(G): # Ensure the graph is connected
-            G = nx.erdos_renyi_graph(N, p)
-    elif graph == 'barabasi_albert':
-        G = nx.barabasi_albert_graph(N, m)
-        while not nx.is_connected(G): # Ensure the graph is connected
-            G = nx.barabasi_albert_graph(N, m)        
+    if graph_type == 'complete':
+        graph = nx.complete_graph(N)
+    elif graph_type == 'cycle':
+        graph = nx.cycle_graph(N)
+    elif graph_type == 'line':
+        graph = nx.path_graph(N)
+    elif graph_type == 'erdos_renyi':
+        graph = nx.erdos_renyi_graph(N, p)
+        while not nx.is_connected(graph): # Ensure the graph is connected
+            graph = nx.erdos_renyi_graph(N, p)
+    elif graph_type == 'barabasi_albert':
+        graph = nx.barabasi_albert_graph(N, m)
+        while not nx.is_connected(graph): # Ensure the graph is connected
+            graph = nx.barabasi_albert_graph(N, m)        
     else:
         raise ValueError("Graph must be 'complete', 'cycle', 'line', 'erdos_renyi' or 'barabasi_albert'")
 
-    adjacency_matrix = nx.to_numpy_array(G)
+    adjacency_matrix = nx.to_numpy_array(graph)
 
     # --- Construct the Hamiltonian ---
     H = 0
@@ -139,4 +141,4 @@ def bosonic_search(
     else:
         raise ValueError("Output must be 'states', 'occupations' or 'success probabilities'")
 
-    return result, times, G, params
+    return Simulation(result, times, graph, params)

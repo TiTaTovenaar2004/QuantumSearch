@@ -5,7 +5,7 @@ from qutip import *
 from matplotlib.animation import FuncAnimation
 import networkx as nx
 
-from utils import show_superposition, to_fock, distribute,distribute_with_cap
+from utils import show_superposition, to_fock, distribute, distribute_with_cap
 
 def majority_vote_operator(N, M, r, marked_vertex, dim_per_site):
 
@@ -49,18 +49,3 @@ def majority_vote_operator(N, M, r, marked_vertex, dim_per_site):
         return projector
 
     return w_largest_projector()
-
-# --- --- --- Testing --- --- ---
-# N = 2
-# M = 1
-# r = 2
-# marked_vertex = 0
-
-# dim_per_site = M + 1
-
-# op = majority_vote_operator(N, M, r, marked_vertex)
-
-# state = math.sqrt(3)/2 * to_fock([[1,0]], dim_per_site) + 1/2 * to_fock([[0,1]], dim_per_site)
-# total_state = tensor(state, state)
-# print(expect(op, total_state))
-# print(9/16)
