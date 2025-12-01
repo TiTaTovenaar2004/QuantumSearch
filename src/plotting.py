@@ -6,7 +6,7 @@ from matplotlib.animation import FuncAnimation
 import networkx as nx
 
 # --- Plot site populations ---
-def plot_site_populations(result, params):
+def plot_site_occupations(occupations, params):
     # Unpack parameters
     T = params['T']
     number_of_time_steps = params['number of time steps']
@@ -17,7 +17,7 @@ def plot_site_populations(result, params):
     plt.tight_layout()
 
     # Plot the color map of site populations
-    plt.imshow(np.array(result.expect, dtype=float), aspect='auto', cmap='jet', interpolation='nearest')
+    plt.imshow(np.array(occupations, dtype=float), aspect='auto', cmap='jet', interpolation='nearest')
 
     # Labels
     plt.xlabel(r'Time, $\gamma t$', fontsize=12)
@@ -135,7 +135,7 @@ def animate_marked_vertex_distribution(states, times, params):
 import numpy as np
 
 # --- Plot success probabilities ---
-def plot_success_probabilities(result, times, R):
+def plot_success_probabilities(result, times, rounds):
     """
     Plots the success probabilities as a function of time.
 
@@ -152,7 +152,7 @@ def plot_success_probabilities(result, times, R):
     plt.figure(figsize=(8, 5))
     
     # QuTiP stores expectation values in `result.expect`
-    for idx, r in enumerate(R):
+    for idx, r in enumerate(rounds):
         plt.plot(times, result[idx], label=f"R = {r}")
 
     plt.title("Success probability vs time")

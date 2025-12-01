@@ -14,9 +14,9 @@ def create_graph(N, graph_type, p=0.5, m=2):
         graph = nx.cycle_graph(N)
     elif graph_type == 'line':
         graph = nx.path_graph(N)
-    elif graph_type == 'erdos_renyi':
+    elif graph_type == 'erdos-renyi':
         graph = nx.erdos_renyi_graph(N, p)
-    elif graph_type == 'barabasi_albert':
+    elif graph_type == 'barabasi-albert':
         graph = nx.barabasi_albert_graph(N, m)
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")

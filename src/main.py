@@ -11,11 +11,11 @@ from fermionic_search import fermionic_search
 from utils import create_graph
 
 simulation = fermionic_search(
-    N = 3,
     M = 2,
-    graph = create_graph(3, 'complete'),
-    hopping_rate = 1/3,
-    output = 'occupations'
+    graph = create_graph(4, 'erdos-renyi', p=0.8),
+    hopping_rate = 1/4,
+    calculate_occupations=True,
+    T = 100,
 )
 
-simulation.plot_site_populations()
+simulation.plot_site_occupations()
