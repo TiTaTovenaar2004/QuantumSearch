@@ -9,7 +9,7 @@ import networkx as nx
 def plot_site_populations(result, params):
     # Unpack parameters
     T = params['T']
-    number_of_time_steps = params['number_of_time_steps']
+    number_of_time_steps = params['number of time steps']
     N = params['N']
 
     # --- Plot site populations ---
@@ -50,8 +50,8 @@ def plot_site_populations(result, params):
 def plot_marked_vertex_occupation_distribution(state, params): # Plots the occupation distribution of the marked vertex at time T
     # Unpack parameters
     N = params['N']
-    dim_per_site = params['dim_per_site']
-    marked_vertex = params['marked_vertex']
+    dim_per_site = params['dim per site']
+    marked_vertex = params['marked vertex']
     
     probs = np.zeros(dim_per_site)
 
@@ -89,8 +89,8 @@ def animate_marked_vertex_distribution(states, times, params):
 
     # Unpack parameters
     N = params['N']
-    dim_per_site = params['dim_per_site']
-    marked_vertex = params['marked_vertex']
+    dim_per_site = params['dim per site']
+    marked_vertex = params['marked vertex']
 
     # Precompute probabilities P_k(t) for all times
     probs_time = np.zeros((len(times), dim_per_site))

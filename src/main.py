@@ -8,15 +8,14 @@ import time
 
 from bosonic_search import bosonic_search
 from fermionic_search import fermionic_search
-from majority_vote_operator import majority_vote_operator
-from plotting import plot_site_populations, plot_marked_vertex_occupation_distribution, animate_marked_vertex_distribution, plot_success_probabilities
-from utils import show_superposition
+from utils import create_graph
 
 simulation = fermionic_search(
     N = 3,
-    M = 1,
-    graph_type = 'complete',
-    output = 'success probabilities',
+    M = 2,
+    graph = create_graph(3, 'complete'),
+    hopping_rate = 1/3,
+    output = 'occupations'
 )
 
-plot_success_probabilities(simulation.result, simulation.times, R=[1])
+simulation.plot_site_populations()

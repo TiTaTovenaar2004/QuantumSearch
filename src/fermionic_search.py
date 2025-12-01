@@ -11,34 +11,28 @@ from simulation import Simulation
 def fermionic_search(
     N, # Number of sites in the graph
     M, # Number of fermions
-    graph_type, # 'complete', 'cycle', 'line', 'erdos_renyi', 'barabasi_albert'
+    graph, # Graph object
+    hopping_rate, # Hopping rate of the model (if None, set to critical hopping rate for complete graph)
     output, # 'states', 'occupations' or 'success probabilities'
     marked_vertex = 0, # Vertex to be marked
-    p = 0.5, # Parameter for Erdős-Rényi graph
-    m = 2, # Parameter for Barabási-Albert graph
-    hopping_rate = None, # Hopping rate of the model (if None, set to critical hopping rate for complete graph
     T = 200, # Total time for the simulation
     number_of_time_steps = 200, # Number of time steps in the simulation
     R = [1] # List of number of rounds of the majority vote for which to calculate the success probabilities (in ascending order!)
 ):
-    dim_per_site = 2 # Dimension of the Hilbert space per site
-    if hopping_rate is None:
-        hopping_rate = 1 / N # Critical hopping rate for complete graph   
+    dim_per_site = 2 # Dimension of the Hilbert space per site  
 
     # --- Create dictionary to hold parameters ---
     params = {
         'N' : N,
         'M' : M,
-        'graph type' : graph_type,
+        'graph' : graph,
         'output' : output,
         'marked vertex' : marked_vertex,
-        'p' : p,
-        'm' : m,
         'dim per site' : dim_per_site,
         'hopping rate' : hopping_rate,
         'T' : T,
         'number of time steps' : number_of_time_steps,
-        'R' : R
+        'R' : R,
     }
 
     # --- Define creation and annihilation operators ---
@@ -85,27 +79,8 @@ def fermionic_search(
     for op in creators:
         init_state = op * init_state
 
-    # --- Construct the graph ---
-    if graph_type == 'complete':
-        graph = nx.complete_graph(N)
-    elif graph_type == 'cycle':
-        graph = nx.cycle_graph(N)
-    elif graph_type == 'line':
-        graph = nx.path_graph(N)
-    elif graph_type == 'erdos_renyi':
-        graph = nx.erdos_renyi_graph(N, p)
-        while not nx.is_connected(graph): # Ensure the graph is connected
-            graph = nx.erdos_renyi_graph(N, p)
-    elif graph_type == 'barabasi_albert':
-        graph = nx.barabasi_albert_graph(N, m)
-        while not nx.is_connected(graph): # Ensure the graph is connected
-            graph = nx.barabasi_albert_graph(N, m)        
-    else:
-        raise ValueError("Graph must be 'complete', 'cycle', 'line', 'erdos_renyi' or 'barabasi_albert'")
-
-    adjacency_matrix = nx.to_numpy_array(graph)
-
     # --- Construct the Hamiltonian ---
+    adjacency_matrix = nx.to_numpy_array(graph)
     H = 0
 
     for j in range(N):

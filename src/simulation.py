@@ -14,15 +14,22 @@ class Simulation:
         self.times = times
         self.graph = graph
         self.params = params
+        self.output = params['output']
 
     def plot_site_populations(self):
-        if self.params['output'] != 'occupations':
+        if self.output != 'occupations':
             raise ValueError("Site populations can only be plotted if output is 'occupations'")
         else:
             plot_site_populations(self.result, self.params)
     
     def plot_marked_vertex_occupation_distribution(self):
-        if self.params['output'] != 'occupations':
-            raise ValueError("Marked vertex occupation distribution can only be plotted if output is 'occupations'")
+        if self.output != 'states':
+            raise ValueError("Marked vertex occupation distribution can only be plotted if output is 'states'")
         else:
-            plot_marked_vertex_occupation_distribution(self.result, self.times, self.params)
+            plot_marked_vertex_occupation_distribution(self.result[-1], self.params)
+    
+    def animate_marked_vertex_distribution(self):
+        if self.output != 'states':
+            raise ValueError("Animation of marked vertex occupation distribution can only be created if output is 'states'")
+        else:
+            return animate_marked_vertex_distribution(self.result, self.times, self.params)
