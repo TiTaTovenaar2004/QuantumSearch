@@ -7,44 +7,38 @@ import networkx as nx
 
 # --- Plot site populations ---
 def plot_site_occupations(occupations, params):
-    # Unpack parameters
     T = params['T']
     number_of_time_steps = params['number of time steps']
     N = params['N']
+
+    # --- Create time array from 0 to T ---
+    times = np.linspace(0, T, number_of_time_steps)
 
     # --- Plot site populations ---
     plt.figure(figsize=(8, 5))
     plt.tight_layout()
 
     # Plot the color map of site populations
-    plt.imshow(np.array(occupations, dtype=float), aspect='auto', cmap='jet', interpolation='nearest')
+    plt.imshow(np.array(occupations, dtype=float),
+               aspect='auto',
+               cmap='jet',
+               interpolation='nearest',
+               extent=[0, T, len(occupations) + 0.5, 0.5]) # y from 0.5 to num_rows + 0.5
+                 
 
     # Labels
-    plt.xlabel(r'Time, $\gamma t$', fontsize=12)
-    plt.ylabel(r'Vertex, $i$', fontsize=12)
+    plt.xlabel('Time', fontsize=12)
+    plt.ylabel('Vertex', fontsize=12)
 
     # Colorbar
     plt.colorbar(label='Population')
 
-    # Add yticks on both sides
+    # Set y-ticks: one tick per row
+    plt.yticks(np.arange(1, len(occupations) + 1))
     plt.tick_params(axis='y', which='both', right=True, labelright=True)
 
-    # --- Rescale x-axis ticks ---
-    # Get current x-ticks (these correspond to index positions, not actual times)
-    ax = plt.gca()
-    num_steps = number_of_time_steps 
-    scale_factor = (num_steps / T) * N
-
-    # Compute new tick positions corresponding to multiples of pi
-    max_pi = int(np.floor(T * math.pi / (T / N)))  # a rough upper bound
-    max_tick = number_of_time_steps
-    pi_ticks = np.arange(0, max_tick, int(scale_factor * math.pi))
-
-    xtick_labels = [rf'{i}$\pi$' if i > 0 else '0' for i in range(len(pi_ticks))]
-    plt.xticks(pi_ticks, xtick_labels)
-
-    plt.title('Site Populations over Time', fontsize=14)
     plt.show()
+
 
 # --- Plot marked vertex occupation distribution ---
 def plot_marked_vertex_occupation_distribution(state, params): # Plots the occupation distribution of the marked vertex at time T
@@ -74,7 +68,6 @@ def plot_marked_vertex_occupation_distribution(state, params): # Plots the occup
     plt.bar(range(dim_per_site), probs, color='steelblue', edgecolor='black')
     plt.xlabel("Number of bosons k on marked vertex")
     plt.ylabel("Probability P(k)")
-    plt.title(f"Occupation distribution on marked vertex {marked_vertex}")
     plt.xticks(range(dim_per_site))
     plt.grid(axis='y', alpha=0.3)
     plt.tight_layout()
@@ -111,7 +104,6 @@ def animate_marked_vertex_distribution(states, times, params):
     ax.set_ylim(0, 1)
     ax.set_xlabel("Number of bosons k on marked vertex")
     ax.set_ylabel("Probability P(k)")
-    ax.set_title(f"Occupation distribution on marked vertex {marked_vertex}")
     ax.set_xticks(range(dim_per_site))
     time_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
 
@@ -132,7 +124,7 @@ def animate_marked_vertex_distribution(states, times, params):
     return ani
 
 # --- Plot success probabilities ---
-def plot_success_probabilities(result, times, rounds):
+def plot_success_probabilities(success_probabilities, times, rounds):
     """
     Plots the success probabilities as a function of time.
 
@@ -148,13 +140,11 @@ def plot_success_probabilities(result, times, rounds):
     """
     plt.figure(figsize=(8, 5))
     
-    # QuTiP stores expectation values in `result.expect`
     for idx, r in enumerate(rounds):
-        plt.plot(times, result[idx], label=f"R = {r}")
+        plt.plot(times, success_probabilities[idx], label=f"R = {r}")
 
-    plt.title("Success probability vs time")
-    plt.xlabel("Time")
-    plt.ylabel("Success probability")
+    plt.xlabel("Time t")
+    plt.ylabel("Success probability P(t)")
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
