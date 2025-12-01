@@ -7,11 +7,12 @@ import networkx as nx
 
 from majority_vote_operator import majority_vote_operator
 from simulation import Simulation
+from utils import critical_hopping_rate
 
 def bosonic_search(
     M, # Number of bosons
     graph, # Graph object
-    hopping_rate, # Hopping rate of the model (if None, set to critical hopping rate for complete graph
+    hopping_rate = None, # Hopping rate of the model (if None, set to critical hopping rate for complete graph
     calculate_occupations = False, # Whether to calculate each (average) site occupation (as a function of time) as well
     marked_vertex = 0, # Vertex to be marked
     T = 200, # Total time for the simulation
@@ -19,6 +20,8 @@ def bosonic_search(
 ):
     N = graph.number_of_nodes() # Number of sites in the graph
     dim_per_site = M + 1 # Dimension of the Hilbert space per site
+    if hopping_rate is None:
+        hopping_rate = critical_hopping_rate(graph)
 
     # --- Create dictionary to hold parameters ---
     params = {

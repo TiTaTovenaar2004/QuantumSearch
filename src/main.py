@@ -10,12 +10,11 @@ from bosonic_search import bosonic_search
 from fermionic_search import fermionic_search
 from utils import create_graph
 
-simulation = fermionic_search(
-    M = 2,
+simulation = bosonic_search(
+    M = 3,
     graph = create_graph(4, 'erdos-renyi', p=0.8),
-    hopping_rate = 1/4,
-    calculate_occupations=True,
-    T = 100,
+    calculate_occupations = False,
+    T = 110,
 )
 
-simulation.plot_site_occupations()
+simulation.animate_marked_vertex_distribution()

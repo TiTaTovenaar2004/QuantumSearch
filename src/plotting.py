@@ -131,9 +131,6 @@ def animate_marked_vertex_distribution(states, times, params):
 
     return ani
 
-    import matplotlib.pyplot as plt
-import numpy as np
-
 # --- Plot success probabilities ---
 def plot_success_probabilities(result, times, rounds):
     """

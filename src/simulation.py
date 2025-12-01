@@ -26,17 +26,11 @@ class Simulation:
         else:
             plot_site_occupations(self.occupations, self.params)
     
-    # def plot_marked_vertex_occupation_distribution(self):
-    #     if self.output != 'states':
-    #         raise ValueError("Marked vertex occupation distribution can only be plotted if output is 'states'")
-    #     else:
-    #         plot_marked_vertex_occupation_distribution(self.result[-1], self.params)
-    
-    # def animate_marked_vertex_distribution(self):
-    #     if self.output != 'states':
-    #         raise ValueError("Animation of marked vertex occupation distribution can only be created if output is 'states'")
-    #     else:
-    #         return animate_marked_vertex_distribution(self.result, self.times, self.params)
+    def plot_marked_vertex_occupation_distribution(self):
+        plot_marked_vertex_occupation_distribution(self.states[-1], self.params)
+
+    def animate_marked_vertex_distribution(self):
+        animate_marked_vertex_distribution(self.states, self.times, self.params)
 
     # --- Majority vote method ---
     def calculate_success_probabilities(self, rounds):

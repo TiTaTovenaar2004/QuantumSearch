@@ -25,7 +25,7 @@ def create_graph(N, graph_type, p=0.5, m=2):
 
 # Calculate critical hopping rate for given graph
 def critical_hopping_rate(graph):
-    return None
+    return 1 / graph.number_of_nodes()
 
 # --- Functions for the majority vote operator ---
 # Determines all combinations m_1, ..., m_r such that m1 + ... + mr = m_tot
