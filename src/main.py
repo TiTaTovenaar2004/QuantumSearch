@@ -20,5 +20,7 @@ simulation = bosonic_search(
 # simulation.plot_marked_vertex_occupation_distribution()
 # simulation.animate_marked_vertex_distribution()
 simulation.calculate_success_probabilities([1, 2])
+simulation.determine_running_times([0.5, 0.75, 0.9])
+print(simulation.running_times)
 simulation.plot_success_probabilities()
 

@@ -7,6 +7,7 @@ import networkx as nx
 
 from majority_vote_operator import majority_vote_operator
 from plotting import plot_site_occupations, plot_marked_vertex_occupation_distribution, animate_marked_vertex_distribution, plot_success_probabilities
+from utils import determine_success_time
 
 class Simulation:
     def __init__(self, states, occupations, times, graph, params):
@@ -18,6 +19,7 @@ class Simulation:
 
         self.success_probabilities = None
         self.rounds = None
+        self.running_times = None
 
     # --- Plotting states/occupations methods ---
     def plot_site_occupations(self):
@@ -71,3 +73,15 @@ class Simulation:
             raise ValueError("Success probabilities have not been calculated yet. Please run the 'calculate_success_probabilities'-method first.")
         else:
             plot_success_probabilities(self.success_probabilities, self.times, self.rounds)
+    
+    # --- Method for determining the running times ---
+    def determine_running_times(self, thresholds):
+        if self.success_probabilities is None or self.rounds is None:
+            raise ValueError("Success probabilities have not been calculated yet. Please run the 'calculate_success_probabilities'-method first.")
+        else:
+            running_times = []
+            for idx, r in enumerate(self.rounds):
+                success_times = determine_success_time(thresholds, self.success_probabilities[idx], self.times) # Determine the time to reach each success probability threshold
+                running_times.append(r * success_times) # The running time is the number of rounds times the time to reach the success probability
+
+            self.running_times = np.array(running_times) # Returns a 2D array with shape (len(rounds), len(thresholds))

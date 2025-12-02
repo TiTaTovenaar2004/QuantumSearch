@@ -50,6 +50,29 @@ def distribute_with_cap(k, n, dim_per_site):
             for rest in distribute_with_cap(k - i, n - 1, dim_per_site):
                 yield (i,) + rest
 
+# Determine success time of quantum search, given a list of success probability thresholds and a list of success probabilities
+def determine_success_time(thresholds, success_probabilities, times):
+    if not all(0 < threshold < 1 for threshold in thresholds):
+        raise ValueError("All thresholds must be strictly between 0 and 1.")
+    thresholds = sorted(thresholds)
+
+    success_times = []
+    current_threshold_index = 0
+    current_probability_index = 0
+    while current_threshold_index < len(thresholds):
+        if success_probabilities[current_probability_index] >= thresholds[current_threshold_index]:
+            success_times.append(times[current_probability_index])
+            current_threshold_index += 1
+        else:
+            current_probability_index += 1
+            if current_probability_index >= len(success_probabilities):
+                # If we reach the end of success probabilities without meeting all thresholds, append None
+                for threshold in range(current_threshold_index, len(thresholds)):
+                    success_times.append(None)
+                break
+    
+    return np.array(success_times)
+
 # --- Testing functions ---
 # Visualize vector in as superposition of Fock basis states
 def show_superposition(state):
