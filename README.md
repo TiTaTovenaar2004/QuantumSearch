@@ -10,7 +10,7 @@ Assuming optimal hopping rate can be determined.
 ## Run 2
 - Plan: Use the best T, threshold(s) and stop condition found in Run 1. Simulate fermionic search on a complete graph for all N = 1, 2, ..., as large as possible, optimize the lowest running time over M for each N.
 - Output: For each N, the running time of the fermionic search on the complete graph (minimized over M). Compare with Karthigeyan2025 (N^1/3 ?)
-- Output: For some values of N, a plot of the lowest running time as a function of M. Compare with Karthigeyan2025 (M goes as sqrt(N)?)
+- Output: For some values of N, a plot of the lowest running time as a function of M. Make a plot of the optimal M as a function of N. Compare with Karthigeyan2025 (M goes as sqrt(N)?)
 
 ## Run 3
 - Plan: Use same T, threshold(s) and stop condition. Simulate fermionic and bosonic search on a lot of erdos-renyi graphs (for different p's) and for each graph optimize the lowest running times over M (fermionic and bosonic separately of course).
