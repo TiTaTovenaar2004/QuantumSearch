@@ -12,8 +12,8 @@ from utils import critical_hopping_rate
 def bosonic_search(
     M, # Number of bosons
     graph, # Graph object
+    output, # 'states' or 'occupations'
     hopping_rate = None, # Hopping rate of the model (if None, set to critical hopping rate for complete graph
-    calculate_occupations = False, # Whether to calculate each (average) site occupation (as a function of time) as well
     marked_vertex = 0, # Vertex to be marked
     T = 200, # Total time for the simulation
     number_of_time_steps = 200, # Number of time steps in the simulation
@@ -28,7 +28,7 @@ def bosonic_search(
         'N' : N,
         'M' : M,
         'graph' : graph,
-        'calculate occupations' : calculate_occupations,
+        'output' : output,
         'marked vertex' : marked_vertex,
         'dim per site' : dim_per_site,
         'hopping rate' : hopping_rate,
@@ -91,14 +91,16 @@ def bosonic_search(
     # --- Time evolution ---
     times = np.linspace(0, T, number_of_time_steps)
 
-    if not calculate_occupations: # Only calculate states
+    if output == 'states': # Only calculate states
         result = sesolve(H, init_state, times)
         states = result.states
         occupations = None
-    else: # Also calculate occupations
+    elif output == 'occupations': # Only calculate occupations
         number_operators = [number_operator(i, N) for i in range(N)]
         result = sesolve(H, init_state, times, e_ops = number_operators)
-        states = result.states
+        states = None
         occupations = result.expect
+    else:
+        raise ValueError("The 'output'-parameter must be either 'states' or 'occupations'.")
 
     return Simulation(states, occupations, times, graph, params)

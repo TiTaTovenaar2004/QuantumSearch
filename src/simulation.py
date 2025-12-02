@@ -27,16 +27,24 @@ class Simulation:
             plot_site_occupations(self.occupations, self.params)
     
     def plot_marked_vertex_occupation_distribution(self):
-        plot_marked_vertex_occupation_distribution(self.states[-1], self.params)
+        if self.states is None:
+            raise ValueError("Marked vertex occupation distribution can only be plotted if the states were calculated during the simulation.")
+        else:
+            plot_marked_vertex_occupation_distribution(self.states[-1], self.params)
 
     def animate_marked_vertex_distribution(self):
-        animate_marked_vertex_distribution(self.states, self.times, self.params)
+        if self.states is None:
+            raise ValueError("Marked vertex occupation distribution can only be animated if the states were calculated during the simulation.")
+        else:
+            animate_marked_vertex_distribution(self.states, self.times, self.params)
 
     # --- Majority vote method ---
     def calculate_success_probabilities(self, rounds):
         # Check if rounds is a list of strictly positive integers and sort it in ascending order
         if not all(isinstance(r, int) and r > 0 for r in rounds):
             raise ValueError("The input of the 'calculate_success_probabilities'-method must be a list of strictly positive integers.")
+        elif self.states is None:
+            raise ValueError("Success probabilities can only be calculated if the states were calculated during the simulation.")
         else:
             rounds = sorted(rounds)
         

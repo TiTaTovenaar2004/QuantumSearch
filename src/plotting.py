@@ -66,7 +66,7 @@ def plot_marked_vertex_occupation_distribution(state, params): # Plots the occup
     # Plot histogram
     plt.figure(figsize=(6, 4))
     plt.bar(range(dim_per_site), probs, color='steelblue', edgecolor='black')
-    plt.xlabel("Number of bosons k on marked vertex")
+    plt.xlabel("Number of particles k on marked vertex")
     plt.ylabel("Probability P(k)")
     plt.xticks(range(dim_per_site))
     plt.grid(axis='y', alpha=0.3)
@@ -75,11 +75,6 @@ def plot_marked_vertex_occupation_distribution(state, params): # Plots the occup
 
 # --- Animate marked vertex occupation distribution ---
 def animate_marked_vertex_distribution(states, times, params):
-    """
-    Create an animation showing the probability distribution of finding k bosons
-    on the marked vertex as a function of time.
-    """
-
     # Unpack parameters
     N = params['N']
     dim_per_site = params['dim per site']
@@ -102,7 +97,7 @@ def animate_marked_vertex_distribution(states, times, params):
     fig, ax = plt.subplots(figsize=(6, 4))
     bars = ax.bar(range(dim_per_site), probs_time[0], color='steelblue', edgecolor='black')
     ax.set_ylim(0, 1)
-    ax.set_xlabel("Number of bosons k on marked vertex")
+    ax.set_xlabel("Number of particles k on marked vertex")
     ax.set_ylabel("Probability P(k)")
     ax.set_xticks(range(dim_per_site))
     time_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
@@ -125,19 +120,7 @@ def animate_marked_vertex_distribution(states, times, params):
 
 # --- Plot success probabilities ---
 def plot_success_probabilities(success_probabilities, times, rounds):
-    """
-    Plots the success probabilities as a function of time.
 
-    Parameters
-    ----------
-    result : qutip.solver.Result
-        Output from `sesolve` when `output='success probabilities'`.
-        It should contain one expectation value array per R value.
-    times : array-like
-        Array of time points corresponding to the simulation.
-    R : list[int]
-        List of the number of majority vote rounds (same as passed to `bosonic_search`).
-    """
     plt.figure(figsize=(8, 5))
     
     for idx, r in enumerate(rounds):
