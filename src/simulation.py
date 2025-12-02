@@ -17,9 +17,11 @@ class Simulation:
         self.graph = graph
         self.params = params
 
-        self.success_probabilities = None
-        self.rounds = None
-        self.running_times = None
+        self.success_probabilities = None # [[success probabilities for MV of rounds[0] rounds], [success probabilities for MV of rounds[1] rounds], ...]
+        self.rounds = None # List of the number of rounds used in the majority vote
+        self.running_times = None # [[running times for MV of rounds[0] rounds for different thresholds], [running times for MV of rounds[1] rounds for different thresholds], ...]
+        self.lowest_running_times = None # [lowest running times for different thresholds (over all MV's)]
+        self.rounds_of_lowest_running_times = None # [number of rounds of MV that gives the lowest running time for each threshold]
 
     # --- Plotting states/occupations methods ---
     def plot_site_occupations(self):
@@ -74,7 +76,7 @@ class Simulation:
         else:
             plot_success_probabilities(self.success_probabilities, self.times, self.rounds)
     
-    # --- Method for determining the running times ---
+    # --- Method for determining the running times for each MV (so MV of rounds[0] rounds, MV of rounds[1] rounds, etc..) ---
     def determine_running_times(self, thresholds):
         if self.success_probabilities is None or self.rounds is None:
             raise ValueError("Success probabilities have not been calculated yet. Please run the 'calculate_success_probabilities'-method first.")
@@ -85,3 +87,40 @@ class Simulation:
                 running_times.append(r * success_times) # The running time is the number of rounds times the time to reach the success probability
 
             self.running_times = np.array(running_times) # Returns a 2D array with shape (len(rounds), len(thresholds))
+
+    # --- Method for determining the lowest running time (over all MV's) for each threshold ---
+    def determine_lowest_running_times(self, thresholds, stop_condition = 2):
+        if self.states is None:
+            raise ValueError("Running times can only be determined if the states were calculated during the simulation.")
+        
+        # Calculate running times for increasing number of rounds majority vote, until increasing the number of rounds no longer decreases the running time (for any threshold)
+        running_times = np.empty((0, len(thresholds))) # running_times[i][j] is the running time for threshold j using rounds[i] rounds majority vote
+        stop_conditions = np.zeros(len(thresholds)) # stop_conditions[i] is incremented whenever increasing the number of rounds (for threshold i) does not decrease the running time. If all elements reach 'stop_condition', we stop increasing the number of rounds, and return the lowest running times found so far.
+        current_number_of_rounds = 1 # Start with majority vote of 1 round
+        total_states = self.states # Start with the original states (no tensoring yet)
+
+        while True:
+            # Determine success probabilities for current number of rounds
+            op = majority_vote_operator(self.params['N'], self.params['M'], current_number_of_rounds, self.params['marked vertex'], self.params['dim per site'])
+            success_probabilities = [expect(op, total_state) for total_state in total_states]
+
+            # Determine success times for current number of rounds
+            success_times = determine_success_time(thresholds, success_probabilities, self.times)
+            running_times = np.vstack([running_times, current_number_of_rounds * success_times])
+
+            # Update stop conditions
+            if current_number_of_rounds > 1: # If we have done only 1 round so far, we cannot compare yet
+                for i in range(len(thresholds)):
+                    if running_times[current_number_of_rounds - 1, i] >= running_times[current_number_of_rounds - 2, i]:
+                        stop_conditions[i] += 1
+            
+            # Setting up for next iteration (if stop condition not yet met)
+            if np.any(stop_conditions < stop_condition):
+                current_number_of_rounds += 1
+                total_states = [tensor([total_state, state]) for total_state, state in zip(total_states, self.states)]
+            else:
+                break
+
+        # Determine lowest running times for each threshold
+        self.lowest_running_times = np.min(running_times, axis = 0) 
+        self.rounds_of_lowest_running_times = np.argmin(running_times, axis = 0) + 1          

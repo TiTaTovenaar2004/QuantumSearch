@@ -68,7 +68,7 @@ def determine_success_time(thresholds, success_probabilities, times):
             if current_probability_index >= len(success_probabilities):
                 # If we reach the end of success probabilities without meeting all thresholds, append None
                 for threshold in range(current_threshold_index, len(thresholds)):
-                    success_times.append(None)
+                    success_times.append(math.inf)
                 break
     
     return np.array(success_times)

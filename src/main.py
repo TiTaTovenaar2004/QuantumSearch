@@ -10,17 +10,16 @@ from bosonic_search import bosonic_search
 from fermionic_search import fermionic_search
 from utils import create_graph
 
-simulation = bosonic_search(
+simulation = fermionic_search(
     M = 2,
     graph = create_graph(4, 'complete'),
     output = 'states',
     T = 40,
 )
 
-# simulation.plot_marked_vertex_occupation_distribution()
-# simulation.animate_marked_vertex_distribution()
-simulation.calculate_success_probabilities([1, 2])
-simulation.determine_running_times([0.5, 0.75, 0.9])
+simulation.determine_lowest_running_times([0.2, 0.4, 0.6], stop_condition=1)
+print(simulation.lowest_running_times)
+print(simulation.rounds_of_lowest_running_times)
+simulation.calculate_success_probabilities([1, 2, 3, 4])
+simulation.determine_running_times([0.2, 0.4, 0.6])
 print(simulation.running_times)
-simulation.plot_success_probabilities()
-
