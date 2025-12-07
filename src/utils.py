@@ -5,24 +5,6 @@ from qutip import *
 from matplotlib.animation import FuncAnimation
 import networkx as nx
 
-# --- Graph related functions ---
-# Generate graph based on type and parameters
-def create_graph(N, graph_type, p=0.5, m=2):
-    if graph_type == 'complete':
-        graph = nx.complete_graph(N)
-    elif graph_type == 'cycle':
-        graph = nx.cycle_graph(N)
-    elif graph_type == 'line':
-        graph = nx.path_graph(N)
-    elif graph_type == 'erdos-renyi':
-        graph = nx.erdos_renyi_graph(N, p)
-    elif graph_type == 'barabasi-albert':
-        graph = nx.barabasi_albert_graph(N, m)
-    else:
-        raise ValueError(f"Unknown graph type: {graph_type}")
-
-    return graph
-
 # Calculate critical hopping rate for given graph
 def critical_hopping_rate(graph):
     return 1 / graph.number_of_nodes()

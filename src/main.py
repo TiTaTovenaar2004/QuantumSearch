@@ -8,18 +8,19 @@ import time
 
 from bosonic_search import bosonic_search
 from fermionic_search import fermionic_search
-from utils import create_graph
+from graph import Graph
 
-simulation = fermionic_search(
-    M = 2,
-    graph = create_graph(4, 'complete'),
-    output = 'states',
-    T = 40,
-)
-
-simulation.determine_lowest_running_times([0.2, 0.4, 0.6], stop_condition=1)
-print(simulation.lowest_running_times)
-print(simulation.rounds_of_lowest_running_times)
-simulation.calculate_success_probabilities([1, 2, 3, 4])
-simulation.determine_running_times([0.2, 0.4, 0.6])
-print(simulation.running_times)
+graph1 = Graph('erdos-renyi', 200)
+graph1.calculate_eig()
+print("Eigenvalues:", graph1.eigenvalues)
+print("Eigenvectors:", graph1.eigenvectors)
+print("Spectral Radius:", graph1.spectral_radius)
+print("Eigenvalues Normalized:", graph1.eigenvalues_normalized)
+print("Spectral Gap:", graph1.spectral_gap)
+print("Marked Vertex Projection:", graph1.marked_vertex_projection)
+print("sqrt(epsilon):", graph1.sqrt_epsilon)
+print("S1:", graph1.S1)
+print("S2:", graph1.S2)
+print("S3:", graph1.S3)
+print("Hopping Rate:", graph1.hopping_rate)
+print("c:", graph1.c)
