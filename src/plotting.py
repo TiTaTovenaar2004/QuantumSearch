@@ -132,3 +132,42 @@ def plot_success_probabilities(success_probabilities, times, rounds):
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.show()
+
+# --- Plot with error bars or shaded region ---
+def plot_with_error(x, y, shaded=True, percentiles=(0.5, 99.5)):
+    """
+    Plots the mean of measurements with error bars or shaded region containing 99% of values.
+
+    Parameters:
+    - x : 1D array-like, x-axis values
+    - y : 2D array-like, shape (len(x), n_measurements)
+          y[i] contains measurements corresponding to x[i]
+    - shaded : bool, if True, uses shaded region instead of error bars
+    - title : str, plot title
+    """
+    x = np.array(x)
+    y = np.array(y)
+    
+    if y.shape[0] != len(x):
+        raise ValueError("Number of rows in y must match length of x")
+    
+    # Compute mean for central line
+    y_mean = np.mean(y, axis=1)
+    
+    # Compute percentiles for the interval
+    lower = np.percentile(y, percentiles[0], axis=1)
+    upper = np.percentile(y, percentiles[1], axis=1)
+    
+    if shaded:
+        plt.plot(x, y_mean, 'o-', label='Mean')
+        plt.fill_between(x, lower, upper, alpha=0.2, label=str(100 - (percentiles[0] + 100 - percentiles[1])) + '% interval')
+    else:
+        # Compute asymmetric error bars
+        y_err_lower = y_mean - lower
+        y_err_upper = upper - y_mean
+        plt.errorbar(x, y_mean, yerr=[y_err_lower, y_err_upper], fmt='o', capsize=5, label='Mean ± ' + str(100 - (percentiles[0] + 100 - percentiles[1])) + '% interval')
+    
+    plt.xlabel('Number of vertices N')
+    plt.ylabel('c value')
+    plt.legend()
+    plt.show()
