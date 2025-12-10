@@ -1,6 +1,8 @@
 import numpy as np
 import networkx as nx
 
+from utils import orthonormalize_eigenvectors
+
 class Graph:
     def __init__(self, graph_type, N, p=0.5, m=2, marked_vertex=0):
         self.graph_type = graph_type
@@ -27,11 +29,14 @@ class Graph:
     
     def calculate_eig(self):
         # Calculate eigenvalues and eigenvectors
-        eigenvalues, eigenvectors = np.linalg.eig(self.adjacency)
+        eigenvalues, eigenvectors = np.linalg.eigh(self.adjacency)
         idx = eigenvalues.argsort()
         self.eigenvalues = eigenvalues[idx]
         self.eigenvectors = eigenvectors[:, idx] # Columns are eigenvectors
         self.spectral_radius = np.max([abs(self.eigenvalues[0]), self.eigenvalues[-1]])
+
+        # Orthogonalize eigenvectors of degenerate eigenvalues
+        self.eigenvectors = orthonormalize_eigenvectors(self.eigenvalues, self.eigenvectors)
 
         # Calculate normalized adjacency matrix and eigenvalues
         if self.spectral_radius == 0:

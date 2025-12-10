@@ -5,6 +5,34 @@ from qutip import *
 from matplotlib.animation import FuncAnimation
 import networkx as nx
 
+# --- General utility functions ---
+# Returns list of orthonormalized vectors
+def orthonormalize_vectors(vecs):
+    M = np.stack(vecs, axis=1)
+    Q, R = np.linalg.qr(M, mode='reduced')
+    return Q.T
+
+# Orthonormalize eigenvectors corresponding to degenerate eigenvalues
+def orthonormalize_eigenvectors(eigenvalues, eigenvectors):
+    new_eigenvectors = np.copy(eigenvectors)
+    eigenvalues_shifted = np.roll(eigenvalues, -1)
+    degeneracy = (eigenvalues == eigenvalues_shifted).astype(int) # element i is 1 if eigenvalue i is degenerate with eigenvalue i+1
+    current_idx = 0
+    while current_idx < len(degeneracy):
+        if degeneracy[current_idx] == 1:
+            start_idx = current_idx
+            while current_idx < len(degeneracy) and degeneracy[current_idx] == 1:
+                current_idx += 1
+            end_idx = current_idx + 1 # +1 to include the last degenerate eigenvalue
+            degenerate_vecs = [eigenvectors[:, i] for i in range(start_idx, end_idx)]
+            orthonormal_vecs = orthonormalize_vectors(degenerate_vecs)
+            for i, vec in enumerate(orthonormal_vecs):
+                new_eigenvectors[:, start_idx + i] = vec
+        else:
+            current_idx += 1
+    
+    return new_eigenvectors
+
 # Calculate critical hopping rate for given graph
 def critical_hopping_rate(graph):
     return 1 / graph.number_of_nodes()
