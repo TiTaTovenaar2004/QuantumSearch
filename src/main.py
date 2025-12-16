@@ -12,3 +12,17 @@ from graph import Graph
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+c_complete = []
+
+for i in range(16, 33, 1):
+    g = Graph('complete', i)
+    g.calculate_eig()
+    c_complete.append(g.c)
+    print(f"Done with N={i}")
+
+plt.plot(range(16, 33, 1), c_complete, marker='o')
+plt.xlabel('Number of vertices N')
+plt.ylabel('c')
+plt.grid()
+plt.show()
