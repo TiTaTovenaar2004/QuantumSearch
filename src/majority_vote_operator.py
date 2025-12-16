@@ -1,11 +1,6 @@
-import numpy as np
-import math
-from matplotlib import pyplot as plt
 from qutip import *
-from matplotlib.animation import FuncAnimation
-import networkx as nx
 
-from utils import show_superposition, to_fock, distribute, distribute_with_cap
+from utils import distribute_with_cap
 
 def majority_vote_operator(N, M, r, marked_vertex, dim_per_site):
 

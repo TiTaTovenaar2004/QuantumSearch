@@ -1,27 +1,24 @@
 import numpy as np
 import math
-from matplotlib import pyplot as plt
 from qutip import *
-from matplotlib.animation import FuncAnimation
-import networkx as nx
 
-from majority_vote_operator import majority_vote_operator
 from simulation import Simulation
-from utils import critical_hopping_rate
 
 def bosonic_search(
     M, # Number of bosons
     graph, # Graph object
     output, # 'states' or 'occupations'
-    hopping_rate = None, # Hopping rate of the model (if None, set to critical hopping rate for complete graph
-    marked_vertex = 0, # Vertex to be marked
+    hopping_rate = None, # Hopping rate of the model (if None, set to critical hopping rate)
     T = 200, # Total time for the simulation
     number_of_time_steps = 200, # Number of time steps in the simulation
 ):
-    N = graph.number_of_nodes() # Number of sites in the graph
+    N = graph.N # Number of sites in the graph
+    marked_vertex = graph.marked_vertex
     dim_per_site = M + 1 # Dimension of the Hilbert space per site
     if hopping_rate is None:
-        hopping_rate = critical_hopping_rate(graph)
+        if graph.eigenvalues is None:
+            raise ValueError("The graph's eigenvalues have not been calculated yet. Please run the 'calculate_eig'-method of the Graph class before using the bosonic_search function.")
+        hopping_rate = graph.hopping_rate
 
     # --- Create dictionary to hold parameters ---
     params = {
@@ -79,7 +76,7 @@ def bosonic_search(
     init_state = ((uniform_creation_operator(N) ** M) / np.sqrt(math.factorial(M))) * vacuum
 
     # --- Construct the Hamiltonian ---
-    adjacency_matrix = nx.to_numpy_array(graph)
+    adjacency_matrix = graph.adjacency
     H = 0
 
     for j in range(N):

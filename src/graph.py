@@ -11,6 +11,8 @@ class Graph:
         self.m = m
         self.marked_vertex = marked_vertex
 
+        self.eigenvalues = None
+
         # Create graph
         if graph_type == 'complete':
             self.graph = nx.complete_graph(N)

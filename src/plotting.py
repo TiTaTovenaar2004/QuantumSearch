@@ -1,9 +1,7 @@
 import numpy as np
-import math
 from matplotlib import pyplot as plt
 from qutip import *
 from matplotlib.animation import FuncAnimation
-import networkx as nx
 
 # --- Plot site populations ---
 def plot_site_occupations(occupations, params):
