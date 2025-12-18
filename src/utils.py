@@ -34,6 +34,15 @@ def orthonormalize_eigenvectors(eigenvalues, eigenvectors):
 def critical_hopping_rate(graph):
     return 1 / graph.number_of_nodes()
 
+# Determine the number of extrema in the search
+def number_of_extrema(data):
+    data_shifted = np.roll(data, -1)
+    increasing = (data_shifted > data).astype(int)
+    increasing_shifted = np.roll(increasing, -1)
+    extrema = increasing - increasing_shifted
+    
+    return np.sum(abs(extrema))
+
 # --- Functions for the majority vote operator ---
 # Determines all combinations m_1, ..., m_r such that m1 + ... + mr = m_tot
 def distribute(k, n): # Generates all ways to distribute k indistinguishable items into n distinguishable boxes

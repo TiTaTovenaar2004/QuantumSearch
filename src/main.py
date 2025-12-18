@@ -20,11 +20,12 @@ simulation = fermionic_search(
     M=2,
     graph=graph,
     output='states',
-    T=20,
+    T=0.001,
 )
 simulation.determine_lowest_running_times(thresholds=[0.2, 0.4, 0.6, 0.8])
 print("Lowest running times:", simulation.lowest_running_times)
 print("Rounds of lowest running times:", simulation.rounds_of_lowest_running_times)
-print("Simulation time: ", simulation.simulation_time)
+print("Simulation time: ", simulation.simulation_calculation_time)
 print("Hopping rate calculation time: ", simulation.hopping_rate_calculation_time)
 print("Runtime calculation time: ", simulation.running_time_calculation_time)
+print("T: ", simulation.params['T'])

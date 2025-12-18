@@ -20,7 +20,7 @@ class Simulation:
         self.lowest_running_times = None # [lowest running times for different thresholds (over all MV's)]
         self.rounds_of_lowest_running_times = None # [number of rounds of MV that gives the lowest running time for each threshold]
 
-        self.simulation_time = self.params['simulation time']
+        self.simulation_calculation_time = self.params['simulation calculation time']
         self.hopping_rate_calculation_time = graph.hopping_rate_calculation_time
         self.running_time_calculation_time = None
 

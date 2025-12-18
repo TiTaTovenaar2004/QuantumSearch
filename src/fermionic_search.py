@@ -19,7 +19,7 @@ def fermionic_search(
     dim_per_site = 2 # Dimension of the Hilbert space per site
     if hopping_rate is None:
         if graph.eigenvalues is None:
-            raise ValueError("The graph's eigenvalues have not been calculated yet. Please run the 'calculate_eig'-method of the Graph class before using the fermionic_search function.")
+            raise ValueError("The graph's eigenvalues have not been calculated yet. Please run the 'calculate_hopping_rate'-method or the 'calculate_c'-method of the Graph class before using the fermionic_search function.")
         hopping_rate = graph.hopping_rate
 
     # --- Create dictionary to hold parameters ---
@@ -33,7 +33,7 @@ def fermionic_search(
         'hopping rate' : hopping_rate,
         'T' : T,
         'number of time steps' : number_of_time_steps,
-        'simulation time': None
+        'simulation calculation time': None
     }
 
     # --- Define creation and annihilation operators ---
@@ -106,6 +106,6 @@ def fermionic_search(
         raise ValueError("The 'output'-parameter must be either 'states' or 'occupations'.")
     
     end_time = time.time()
-    params['simulation time'] = end_time - start_time
+    params['simulation calculation time'] = end_time - start_time
 
     return Simulation(states, occupations, times, graph, params)
