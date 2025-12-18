@@ -2,7 +2,7 @@ import numpy as np
 import math
 from matplotlib import pyplot as plt
 from qutip import *
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 import networkx as nx
 import time
 
@@ -13,14 +13,13 @@ from graph import Graph
 import numpy as np
 import matplotlib.pyplot as plt
 
-graph = Graph(graph_type='complete', N=3)
+graph = Graph(graph_type='line', N=3)
 graph.calculate_eig()
 
-simulation = bosonic_search(
+simulation = fermionic_search(
     M=2,
     graph=graph,
-    output='states',
-    T=40
+    output='occupations',
+    T=20
 )
-simulation.calculate_success_probabilities(rounds=[1, 2, 3])
-simulation.plot_success_probabilities()
+simulation.plot_site_occupations()

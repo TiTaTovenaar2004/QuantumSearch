@@ -20,23 +20,23 @@ class Simulation:
         self.rounds_of_lowest_running_times = None # [number of rounds of MV that gives the lowest running time for each threshold]
 
     # --- Plotting states/occupations methods ---
-    def plot_site_occupations(self):
+    def plot_site_occupations(self, filename="plot_site_occupations.png"):
         if self.occupations is None:
             raise ValueError("Site populations can only be plotted if the occupations were calculated during the simulation.")
         else:
-            plot_site_occupations(self.occupations, self.params)
+            plot_site_occupations(self.occupations, self.params, filename)
     
-    def plot_marked_vertex_occupation_distribution(self):
+    def plot_marked_vertex_occupation_distribution(self, filename="plot_marked_vertex_occupation_distribution.png"):
         if self.states is None:
             raise ValueError("Marked vertex occupation distribution can only be plotted if the states were calculated during the simulation.")
         else:
-            plot_marked_vertex_occupation_distribution(self.states[-1], self.params)
+            plot_marked_vertex_occupation_distribution(self.states[-1], self.params, filename)
 
-    def animate_marked_vertex_distribution(self):
+    def animate_marked_vertex_distribution(self, filename="animate_marked_vertex_distribution.mp4"):
         if self.states is None:
             raise ValueError("Marked vertex occupation distribution can only be animated if the states were calculated during the simulation.")
         else:
-            animate_marked_vertex_distribution(self.states, self.times, self.params)
+            animate_marked_vertex_distribution(self.states, self.times, self.params, filename)
 
     # --- Majority vote method ---
     def calculate_success_probabilities(self, rounds):
@@ -66,11 +66,11 @@ class Simulation:
         self.rounds = rounds
     
     # --- Plotting success probabilities method ---
-    def plot_success_probabilities(self):
+    def plot_success_probabilities(self, filename="plot_success_probabilities.png"):
         if self.success_probabilities is None or self.rounds is None:
             raise ValueError("Success probabilities have not been calculated yet. Please run the 'calculate_success_probabilities'-method first.")
         else:
-            plot_success_probabilities(self.success_probabilities, self.times, self.rounds)
+            plot_success_probabilities(self.success_probabilities, self.times, self.rounds, filename)
     
     # --- Method for determining the running times for each MV (so MV of rounds[0] rounds, MV of rounds[1] rounds, etc..) ---
     def determine_running_times(self, thresholds):

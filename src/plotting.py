@@ -1,10 +1,10 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from qutip import *
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 
 # --- Plot site populations ---
-def plot_site_occupations(occupations, params):
+def plot_site_occupations(occupations, params, filename):
     T = params['T']
     number_of_time_steps = params['number of time steps']
     N = params['N']
@@ -35,11 +35,12 @@ def plot_site_occupations(occupations, params):
     plt.yticks(np.arange(1, len(occupations) + 1))
     plt.tick_params(axis='y', which='both', right=True, labelright=True)
 
-    plt.show()
+    plt.savefig(filename)
+    plt.close()
 
 
 # --- Plot marked vertex occupation distribution ---
-def plot_marked_vertex_occupation_distribution(state, params): # Plots the occupation distribution of the marked vertex at time T
+def plot_marked_vertex_occupation_distribution(state, params, filename): # Plots the occupation distribution of the marked vertex at time T
     # Unpack parameters
     N = params['N']
     dim_per_site = params['dim per site']
@@ -69,10 +70,11 @@ def plot_marked_vertex_occupation_distribution(state, params): # Plots the occup
     plt.xticks(range(dim_per_site))
     plt.grid(axis='y', alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(filename)
+    plt.close()
 
 # --- Animate marked vertex occupation distribution ---
-def animate_marked_vertex_distribution(states, times, params):
+def animate_marked_vertex_distribution(states, times, params, filename):
     # Unpack parameters
     N = params['N']
     dim_per_site = params['dim per site']
@@ -112,12 +114,15 @@ def animate_marked_vertex_distribution(states, times, params):
     ani = FuncAnimation(fig, update, frames=len(times), blit=True, interval=100)
 
     plt.tight_layout()
-    plt.show()
+    writer = FFMpegWriter(fps=10, bitrate=1800)
+    ani.save(filename, writer=writer)
+
+    plt.close(fig)
 
     return ani
 
 # --- Plot success probabilities ---
-def plot_success_probabilities(success_probabilities, times, rounds):
+def plot_success_probabilities(success_probabilities, times, rounds, filename):
 
     plt.figure(figsize=(8, 5))
     
@@ -129,10 +134,11 @@ def plot_success_probabilities(success_probabilities, times, rounds):
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(filename)
+    plt.close()
 
 # --- Plot with error bars or shaded region ---
-def plot_with_error(x, y, shaded=True, percentiles=(0.5, 99.5)):
+def plot_with_error(x, y, filename, shaded=True, percentiles=(0.5, 99.5)):
     """
     Plots the mean of measurements with error bars or shaded region containing 99% of values.
 
@@ -168,4 +174,5 @@ def plot_with_error(x, y, shaded=True, percentiles=(0.5, 99.5)):
     plt.xlabel('Number of vertices N')
     plt.ylabel('c value')
     plt.legend()
-    plt.show()
+    plt.savefig(filename)
+    plt.close()
