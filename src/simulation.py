@@ -1,5 +1,6 @@
 import numpy as np
 from qutip import *
+import time
 
 from majority_vote_operator import majority_vote_operator
 from plotting import plot_site_occupations, plot_marked_vertex_occupation_distribution, animate_marked_vertex_distribution, plot_success_probabilities
@@ -18,6 +19,10 @@ class Simulation:
         self.running_times = None # [[running times for MV of rounds[0] rounds for different thresholds], [running times for MV of rounds[1] rounds for different thresholds], ...]
         self.lowest_running_times = None # [lowest running times for different thresholds (over all MV's)]
         self.rounds_of_lowest_running_times = None # [number of rounds of MV that gives the lowest running time for each threshold]
+
+        self.simulation_time = self.params['simulation time']
+        self.hopping_rate_calculation_time = graph.hopping_rate_calculation_time
+        self.running_time_calculation_time = None
 
     # --- Plotting states/occupations methods ---
     def plot_site_occupations(self, filename="plot_site_occupations.png"):
@@ -86,6 +91,8 @@ class Simulation:
 
     # --- Method for determining the lowest running time (over all MV's) for each threshold ---
     def determine_lowest_running_times(self, thresholds, stop_condition = 2):
+        start_time = time.time()
+
         if self.states is None:
             raise ValueError("Running times can only be determined if the states were calculated during the simulation.")
         
@@ -119,4 +126,7 @@ class Simulation:
 
         # Determine lowest running times for each threshold
         self.lowest_running_times = np.min(running_times, axis = 0) 
-        self.rounds_of_lowest_running_times = np.argmin(running_times, axis = 0) + 1          
+        self.rounds_of_lowest_running_times = np.argmin(running_times, axis = 0) + 1    
+
+        end_time = time.time()
+        self.running_time_calculation_time = end_time - start_time      

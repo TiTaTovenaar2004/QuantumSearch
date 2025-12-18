@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from qutip import *
+import time
 
 from simulation import Simulation
 
@@ -12,6 +13,8 @@ def bosonic_search(
     T = 200, # Total time for the simulation
     number_of_time_steps = 200, # Number of time steps in the simulation
 ):
+    start_time = time.time()
+    
     N = graph.N # Number of sites in the graph
     marked_vertex = graph.marked_vertex
     dim_per_site = M + 1 # Dimension of the Hilbert space per site
@@ -31,6 +34,7 @@ def bosonic_search(
         'hopping rate' : hopping_rate,
         'T' : T,
         'number of time steps' : number_of_time_steps,
+        'simulation time': None
     }
 
     # --- Define creation and annihilation operators ---
@@ -99,5 +103,8 @@ def bosonic_search(
         occupations = result.expect
     else:
         raise ValueError("The 'output'-parameter must be either 'states' or 'occupations'.")
+
+    end_time = time.time()
+    params['simulation time'] = end_time - start_time
 
     return Simulation(states, occupations, times, graph, params)
