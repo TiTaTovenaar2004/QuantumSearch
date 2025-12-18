@@ -1,3 +1,6 @@
+import matplotlib
+matplotlib.use("Agg")
+
 import numpy as np
 import math
 from matplotlib import pyplot as plt
@@ -10,10 +13,7 @@ from bosonic_search import bosonic_search
 from fermionic_search import fermionic_search
 from graph import Graph
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-graph = Graph(graph_type='line', N=3)
+graph = Graph(graph_type='complete', N=3)
 graph.calculate_eig()
 
 simulation = fermionic_search(
