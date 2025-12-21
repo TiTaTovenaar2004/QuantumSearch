@@ -4,13 +4,13 @@ from qutip import *
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 
 # --- Plot site populations ---
-def plot_site_occupations(occupations, params, filename):
-    T = params['T']
-    number_of_time_steps = params['number of time steps']
-    N = params['N']
+def plot_site_occupations(simulation, filename='plot_site_occupations.png'):
+    occupations = simulation.occupations
 
-    # --- Create time array from 0 to T ---
-    times = np.linspace(0, T, number_of_time_steps)
+    if occupations is None:
+            raise ValueError("Site populations can only be plotted if the occupations were calculated during the simulation.")
+
+    T = simulation.params['T']
 
     # --- Plot site populations ---
     plt.figure(figsize=(8, 5))

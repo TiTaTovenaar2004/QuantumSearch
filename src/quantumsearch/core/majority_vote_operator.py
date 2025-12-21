@@ -1,6 +1,6 @@
 from qutip import *
 
-from utils import distribute_with_cap
+from quantumsearch.core.utils import distribute_with_cap
 
 def majority_vote_operator(N, M, r, marked_vertex, dim_per_site):
 

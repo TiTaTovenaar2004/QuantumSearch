@@ -30,7 +30,7 @@ def orthonormalize_eigenvectors(eigenvalues, eigenvectors):
     
     return new_eigenvectors
 
-# Calculate critical hopping rate for given graph
+# Calculate critical hopping rate for complete graph
 def critical_hopping_rate(graph):
     return 1 / graph.number_of_nodes()
 
@@ -66,6 +66,7 @@ def distribute_with_cap(k, n, dim_per_site):
             for rest in distribute_with_cap(k - i, n - 1, dim_per_site):
                 yield (i,) + rest
 
+# --- Function for determining the success time of a quantum search
 # Determine success time of quantum search, given a list of success probability thresholds and a list of success probabilities
 def determine_success_time(thresholds, success_probabilities, times):
     if not all(0 < threshold < 1 for threshold in thresholds):

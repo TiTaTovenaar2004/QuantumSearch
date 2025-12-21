@@ -2,9 +2,9 @@ import numpy as np
 from qutip import *
 import time
 
-from majority_vote_operator import majority_vote_operator
-from plotting import plot_site_occupations, plot_marked_vertex_occupation_distribution, animate_marked_vertex_distribution, plot_success_probabilities
-from utils import determine_success_time
+from quantumsearch.core.majority_vote_operator import majority_vote_operator
+from quantumsearch.plotting import plot_site_occupations, plot_marked_vertex_occupation_distribution, animate_marked_vertex_distribution, plot_success_probabilities
+from quantumsearch.core.utils import determine_success_time
 
 class Simulation:
     def __init__(self, states, occupations, times, graph, params):

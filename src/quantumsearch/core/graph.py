@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 import time
 
-from utils import orthonormalize_eigenvectors
+from quantumsearch.core.utils import orthonormalize_eigenvectors
 
 class Graph:
     def __init__(self, graph_type, N, p=0.5, m=2, marked_vertex=0):
