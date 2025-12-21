@@ -15,5 +15,13 @@ dependencies = [
     "networkx",
 ]
 
+[project.optional-dependencies]
+parallel = ["mpi4py"]
+dev = ["pytest", "black", "flake8"]
+all = ["mpi4py", "pytest", "black", "flake8"]
+
+[project.scripts]
+quantumsearch-serial = "quantumsearch.cli:run_serial"
+
 [tool.setuptools.packages.find]
 where = ["src"]
