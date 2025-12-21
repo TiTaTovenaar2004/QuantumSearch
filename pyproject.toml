@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantumsearch"
+version = "0.1.0"
+description = "Quantum search algorithms using bosonic and fermionic search"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "qutip",
+    "networkx",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

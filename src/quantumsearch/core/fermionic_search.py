@@ -15,7 +15,7 @@ def fermionic_search(
     simulation_time_adjustment = False, # Whether to adjust the simulation time, so that it contains around 20 extrema
 ):
     start_time = time.time()
-    
+
     N = graph.N # Number of sites in the graph
     marked_vertex = graph.marked_vertex
     dim_per_site = 2 # Dimension of the Hilbert space per site
@@ -120,10 +120,9 @@ def fermionic_search(
         number_operator_w = [number_operator(marked_vertex, N)]
         result = sesolve(H, init_state, times, e_ops = number_operator_w)
         occupations = result.expect
-        
+
         # Determine the number of extrema in the search
         extrema = number_of_extrema(occupations[0])
-        print(f'Number of starting extrema: {extrema}.')
 
         # Adjust the simulation time T
         while extrema < 10:
@@ -135,7 +134,6 @@ def fermionic_search(
             occupations = result.expect
 
             extrema = number_of_extrema(occupations[0])
-            print(f'Number of extrema: {extrema}.')
 
         T = T / (extrema / 20)
         params['T'] = T

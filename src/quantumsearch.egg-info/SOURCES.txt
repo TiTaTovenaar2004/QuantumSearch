@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+src/quantumsearch/main.py
+src/quantumsearch/plotting.py
+src/quantumsearch.egg-info/PKG-INFO
+src/quantumsearch.egg-info/SOURCES.txt
+src/quantumsearch.egg-info/dependency_links.txt
+src/quantumsearch.egg-info/requires.txt
+src/quantumsearch.egg-info/top_level.txt
+src/quantumsearch/core/__init__.py
+src/quantumsearch/core/bosonic_search.py
+src/quantumsearch/core/fermionic_search.py
+src/quantumsearch/core/graph.py
+src/quantumsearch/core/majority_vote_operator.py
+src/quantumsearch/core/simulation.py
+src/quantumsearch/core/utils.py

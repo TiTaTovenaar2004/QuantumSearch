@@ -3,7 +3,6 @@ from qutip import *
 import time
 
 from quantumsearch.core.majority_vote_operator import majority_vote_operator
-from quantumsearch.plotting import plot_site_occupations, plot_marked_vertex_occupation_distribution, animate_marked_vertex_distribution, plot_success_probabilities
 from quantumsearch.core.utils import determine_success_time
 
 class Simulation:
@@ -24,25 +23,6 @@ class Simulation:
         self.hopping_rate_calculation_time = graph.hopping_rate_calculation_time
         self.running_time_calculation_time = None
 
-    # --- Plotting states/occupations methods ---
-    def plot_site_occupations(self, filename="plot_site_occupations.png"):
-        if self.occupations is None:
-            raise ValueError("Site populations can only be plotted if the occupations were calculated during the simulation.")
-        else:
-            plot_site_occupations(self.occupations, self.params, filename)
-    
-    def plot_marked_vertex_occupation_distribution(self, filename="plot_marked_vertex_occupation_distribution.png"):
-        if self.states is None:
-            raise ValueError("Marked vertex occupation distribution can only be plotted if the states were calculated during the simulation.")
-        else:
-            plot_marked_vertex_occupation_distribution(self.states[-1], self.params, filename)
-
-    def animate_marked_vertex_distribution(self, filename="animate_marked_vertex_distribution.mp4"):
-        if self.states is None:
-            raise ValueError("Marked vertex occupation distribution can only be animated if the states were calculated during the simulation.")
-        else:
-            animate_marked_vertex_distribution(self.states, self.times, self.params, filename)
-
     # --- Majority vote method ---
     def calculate_success_probabilities(self, rounds):
         # Check if rounds is a list of strictly positive integers and sort it in ascending order
@@ -52,7 +32,7 @@ class Simulation:
             raise ValueError("Success probabilities can only be calculated if the states were calculated during the simulation.")
         else:
             rounds = sorted(rounds)
-        
+
         success_probabilities = []
 
         # Tensoring each state in self.states rounds[0] times with itself, so that we can apply the rounds[0] rounds majority vote operator
@@ -69,14 +49,7 @@ class Simulation:
 
         self.success_probabilities = np.array(success_probabilities)
         self.rounds = rounds
-    
-    # --- Plotting success probabilities method ---
-    def plot_success_probabilities(self, filename="plot_success_probabilities.png"):
-        if self.success_probabilities is None or self.rounds is None:
-            raise ValueError("Success probabilities have not been calculated yet. Please run the 'calculate_success_probabilities'-method first.")
-        else:
-            plot_success_probabilities(self.success_probabilities, self.times, self.rounds, filename)
-    
+
     # --- Method for determining the running times for each MV (so MV of rounds[0] rounds, MV of rounds[1] rounds, etc..) ---
     def determine_running_times(self, thresholds):
         if self.success_probabilities is None or self.rounds is None:
@@ -95,7 +68,7 @@ class Simulation:
 
         if self.states is None:
             raise ValueError("Running times can only be determined if the states were calculated during the simulation.")
-        
+
         # Calculate running times for increasing number of rounds majority vote, until increasing the number of rounds no longer decreases the running time (for any threshold)
         running_times = np.empty((0, len(thresholds))) # running_times[i][j] is the running time for threshold j using rounds[i] rounds majority vote
         stop_conditions = np.zeros(len(thresholds)) # stop_conditions[i] is incremented whenever increasing the number of rounds (for threshold i) does not decrease the running time. If all elements reach 'stop_condition', we stop increasing the number of rounds, and return the lowest running times found so far.
@@ -116,7 +89,7 @@ class Simulation:
                 for i in range(len(thresholds)):
                     if running_times[current_number_of_rounds - 1, i] >= running_times[current_number_of_rounds - 2, i]:
                         stop_conditions[i] += 1
-            
+
             # Setting up for next iteration (if stop condition not yet met)
             if np.any(stop_conditions < stop_condition):
                 current_number_of_rounds += 1
@@ -125,8 +98,8 @@ class Simulation:
                 break
 
         # Determine lowest running times for each threshold
-        self.lowest_running_times = np.min(running_times, axis = 0) 
-        self.rounds_of_lowest_running_times = np.argmin(running_times, axis = 0) + 1    
+        self.lowest_running_times = np.min(running_times, axis = 0)
+        self.rounds_of_lowest_running_times = np.argmin(running_times, axis = 0) + 1
 
         end_time = time.time()
-        self.running_time_calculation_time = end_time - start_time      
+        self.running_time_calculation_time = end_time - start_time

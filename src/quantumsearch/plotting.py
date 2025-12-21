@@ -22,7 +22,7 @@ def plot_site_occupations(simulation, filename='plot_site_occupations.png'):
                cmap='jet',
                interpolation='nearest',
                extent=[0, T, len(occupations) + 0.5, 0.5]) # y from 0.5 to num_rows + 0.5
-                 
+
 
     # Labels
     plt.xlabel('Time', fontsize=12)
@@ -40,12 +40,18 @@ def plot_site_occupations(simulation, filename='plot_site_occupations.png'):
 
 
 # --- Plot marked vertex occupation distribution ---
-def plot_marked_vertex_occupation_distribution(state, params, filename): # Plots the occupation distribution of the marked vertex at time T
+def plot_marked_vertex_occupation_distribution(simulation, filename='marked_vertex_occupation_distribution.png'): # Plots the occupation distribution of the marked vertex at time T
+    if simulation.states is None:
+        raise ValueError("States are required to plot the marked vertex occupation distribution.")
+
+    state = simulation.states[-1]  # Final state
+    params = simulation.params
+
     # Unpack parameters
     N = params['N']
     dim_per_site = params['dim per site']
     marked_vertex = params['marked vertex']
-    
+
     probs = np.zeros(dim_per_site)
 
     # Loop over all possible occupation numbers for the marked vertex
@@ -74,7 +80,14 @@ def plot_marked_vertex_occupation_distribution(state, params, filename): # Plots
     plt.close()
 
 # --- Animate marked vertex occupation distribution ---
-def animate_marked_vertex_distribution(states, times, params, filename):
+def animate_marked_vertex_distribution(simulation, filename='marked_vertex_occupation_distribution_animation.mp4'):
+    if simulation.states is None:
+        raise ValueError("States are required to animate the marked vertex occupation distribution.")
+
+    states = simulation.states
+    times = simulation.times
+    params = simulation.params
+
     # Unpack parameters
     N = params['N']
     dim_per_site = params['dim per site']
@@ -122,10 +135,16 @@ def animate_marked_vertex_distribution(states, times, params, filename):
     return ani
 
 # --- Plot success probabilities ---
-def plot_success_probabilities(success_probabilities, times, rounds, filename):
+def plot_success_probabilities(simulation, filename='plot_success_probabilities.png'):
+    if simulation.success_probabilities is None or simulation.rounds is None:
+        raise ValueError("Success probabilities have not been calculated yet. Please run the 'calculate_success_probabilities'-method first.")
+
+    success_probabilities = simulation.success_probabilities
+    times = simulation.times
+    rounds = simulation.rounds
 
     plt.figure(figsize=(8, 5))
-    
+
     for idx, r in enumerate(rounds):
         plt.plot(times, success_probabilities[idx], label=f"R = {r}")
 
@@ -138,7 +157,7 @@ def plot_success_probabilities(success_probabilities, times, rounds, filename):
     plt.close()
 
 # --- Plot with error bars or shaded region ---
-def plot_with_error(x, y, filename, shaded=True, percentiles=(0.5, 99.5)):
+def plot_with_error(x, y, filename='plot_with_error.png', shaded=True, percentiles=(0.5, 99.5)):
     """
     Plots the mean of measurements with error bars or shaded region containing 99% of values.
 
@@ -151,17 +170,17 @@ def plot_with_error(x, y, filename, shaded=True, percentiles=(0.5, 99.5)):
     """
     x = np.array(x)
     y = np.array(y)
-    
+
     if y.shape[0] != len(x):
         raise ValueError("Number of rows in y must match length of x")
-    
+
     # Compute mean for central line
     y_mean = np.mean(y, axis=1)
-    
+
     # Compute percentiles for the interval
     lower = np.percentile(y, percentiles[0], axis=1)
     upper = np.percentile(y, percentiles[1], axis=1)
-    
+
     if shaded:
         plt.plot(x, y_mean, 'o-', label='Mean')
         plt.fill_between(x, lower, upper, alpha=0.2, label=str(100 - (percentiles[0] + 100 - percentiles[1])) + '% interval')
@@ -170,7 +189,7 @@ def plot_with_error(x, y, filename, shaded=True, percentiles=(0.5, 99.5)):
         y_err_lower = y_mean - lower
         y_err_upper = upper - y_mean
         plt.errorbar(x, y_mean, yerr=[y_err_lower, y_err_upper], fmt='o', capsize=5, label='Mean ± ' + str(100 - (percentiles[0] + 100 - percentiles[1])) + '% interval')
-    
+
     plt.xlabel('Number of vertices N')
     plt.ylabel('c value')
     plt.legend()
