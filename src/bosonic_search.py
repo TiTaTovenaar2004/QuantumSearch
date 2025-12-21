@@ -36,6 +36,7 @@ def bosonic_search(
         'hopping rate' : hopping_rate,
         'T' : T,
         'number of time steps' : number_of_time_steps,
+        'simulation time adjustment' : simulation_time_adjustment,
         'simulation calculation time': None
     }
 
@@ -121,6 +122,7 @@ def bosonic_search(
         
         # Determine the number of extrema in the search
         extrema = number_of_extrema(occupations[0])
+        print(f'Number of starting extrema: {extrema}.')
 
         # Adjust the simulation time T
         while extrema < 10:
@@ -132,6 +134,7 @@ def bosonic_search(
             occupations = result.expect
 
             extrema = number_of_extrema(occupations[0])
+            print(f'Number of extrema: {extrema}.')
 
         T = T / (extrema / 20)
         params['T'] = T
@@ -149,8 +152,8 @@ def bosonic_search(
         else:
             raise ValueError("The 'output'-parameter must be either 'states' or 'occupations'.")
 
-        end_time = time.time()
-        params['simulation calculation time'] = end_time - start_time
+            end_time = time.time()
+            params['simulation calculation time'] = end_time - start_time
 
         return Simulation(states, occupations, times, graph, params)
         

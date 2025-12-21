@@ -3,6 +3,7 @@ from qutip import *
 import time
 
 from simulation import Simulation
+from utils import number_of_extrema
 
 def fermionic_search(
     M, # Number of fermions
@@ -11,6 +12,7 @@ def fermionic_search(
     hopping_rate = None, # Hopping rate of the model (if None, set to critical hopping rate for complete graph)
     T = 200, # Total time for the simulation
     number_of_time_steps = 200, # Number of time steps in the simulation
+    simulation_time_adjustment = False, # Whether to adjust the simulation time, so that it contains around 20 extrema
 ):
     start_time = time.time()
     
@@ -33,6 +35,7 @@ def fermionic_search(
         'hopping rate' : hopping_rate,
         'T' : T,
         'number of time steps' : number_of_time_steps,
+        'simulation time adjustment' : simulation_time_adjustment,
         'simulation calculation time': None
     }
 
@@ -91,21 +94,66 @@ def fermionic_search(
     H += -creation_operator(marked_vertex, N) * annihilation_operator(marked_vertex, N)
 
     # --- Time evolution ---
-    times = np.linspace(0, T, number_of_time_steps)
+    if simulation_time_adjustment == False:
+        times = np.linspace(0, T, number_of_time_steps)
 
-    if output == 'states': # Only calculate states
-        result = sesolve(H, init_state, times)
-        states = result.states
-        occupations = None
-    elif output == 'occupations': # Only calculate occupations
-        number_operators = [number_operator(i, N) for i in range(N)]
-        result = sesolve(H, init_state, times, e_ops = number_operators)
-        states = None
-        occupations = result.expect
+        if output == 'states': # Only calculate states
+            result = sesolve(H, init_state, times)
+            states = result.states
+            occupations = None
+        elif output == 'occupations': # Only calculate occupations
+            number_operators = [number_operator(i, N) for i in range(N)]
+            result = sesolve(H, init_state, times, e_ops = number_operators)
+            states = None
+            occupations = result.expect
+        else:
+            raise ValueError("The 'output'-parameter must be either 'states' or 'occupations'.")
+
+        end_time = time.time()
+        params['simulation calculation time'] = end_time - start_time
+
+        return Simulation(states, occupations, times, graph, params)
     else:
-        raise ValueError("The 'output'-parameter must be either 'states' or 'occupations'.")
-    
-    end_time = time.time()
-    params['simulation calculation time'] = end_time - start_time
+        # Simulate the search for time T (only occupations, so that the peaks can be calculated)
+        times = np.linspace(0, T, number_of_time_steps)
+
+        number_operator_w = [number_operator(marked_vertex, N)]
+        result = sesolve(H, init_state, times, e_ops = number_operator_w)
+        occupations = result.expect
+        
+        # Determine the number of extrema in the search
+        extrema = number_of_extrema(occupations[0])
+        print(f'Number of starting extrema: {extrema}.')
+
+        # Adjust the simulation time T
+        while extrema < 10:
+            T = 2*T
+            params['T'] = T
+            times = np.linspace(0, T, number_of_time_steps)
+
+            result = sesolve(H, init_state, times, e_ops = number_operator_w)
+            occupations = result.expect
+
+            extrema = number_of_extrema(occupations[0])
+            print(f'Number of extrema: {extrema}.')
+
+        T = T / (extrema / 20)
+        params['T'] = T
+        times = np.linspace(0, T, number_of_time_steps)
+
+        if output == 'states': # Only calculate states
+            result = sesolve(H, init_state, times)
+            states = result.states
+            occupations = None
+        elif output == 'occupations': # Only calculate occupations
+            number_operators = [number_operator(i, N) for i in range(N)]
+            result = sesolve(H, init_state, times, e_ops = number_operators)
+            states = None
+            occupations = result.expect
+        else:
+            raise ValueError("The 'output'-parameter must be either 'states' or 'occupations'.")
+
+        end_time = time.time()
+        params['simulation calculation time'] = end_time - start_time
 
     return Simulation(states, occupations, times, graph, params)
