@@ -40,6 +40,11 @@ def run_parallel_search(task_list, output_dir='results/data'):
               'hopping_rate': float,
               'output': str # 'occupations' or 'states'
             },
+            'task': {
+                'determine_lowest_running_times': bool,
+                'thresholds': list of float,
+                'stop_condition': int
+            }
           }
     output_dir : str
         Directory to save results
@@ -61,31 +66,53 @@ def run_parallel_search(task_list, output_dir='results/data'):
 
     results = []
     for i, task in enumerate(my_tasks):
+        # --- Task setup ---
         task_index = rank + i * size
         print(f"Rank {rank}: Running simulation {task_index+1}/{len(task_list)}")
 
-        # Create graph
         graph = Graph(**task['graph_config'])
-        graph.calculate_hopping_rate()
 
-        # Run search
-        search_func = bosonic_search if task['simulation_config']['search_type'] == 'bosonic' else fermionic_search
-        simulation = search_func(
-            M=task['simulation_config']['M'],
-            graph=graph,
-            output=task['simulation_config']['output'],
-            T=task['time_config']['T'],
-            number_of_time_steps=task['time_config']['number_of_time_steps'],
-            simulation_time_adjustment=task['time_config']['simulation_time_adjustment']
-        )
+        # --- Determine lowest running times if True ---
+        if 'determine_lowest_running_times' in task['task'] and task['task']['determine_lowest_running_times']:
+            # Validate required parameters
+            if 'thresholds' not in task['task'] or 'stop_condition' not in task['task']:
+                raise ValueError("When 'determine_lowest_running_times' is True, 'thresholds' and 'stop_condition' must be provided in 'task'.")
 
-        results.append({
-            'task': task,
-            'graph': graph,
-            'simulation': simulation,
-            'rank': rank,
-            'task_idx': task_index
-        })
+            # Calculate hopping rate if not provided
+            if 'hopping_rate' not in task['simulation_config'] or task['simulation_config']['hopping_rate'] is None:
+                graph.calculate_hopping_rate()
+
+            # Run search
+            search_func = bosonic_search if task['simulation_config']['search_type'] == 'bosonic' else fermionic_search
+            simulation = search_func(
+                M=task['simulation_config']['M'],
+                graph=graph,
+                output=task['simulation_config']['output'],
+                T=task['time_config']['T'],
+                number_of_time_steps=task['time_config']['number_of_time_steps'],
+                simulation_time_adjustment=task['time_config']['simulation_time_adjustment']
+            )
+
+            # Determine lowest running times
+            simulation.determine_lowest_running_times(
+                thresholds=task['task']['thresholds'],
+                stop_condition=task['task']['stop_condition']
+            )
+
+            # Free memory by deleting large state arrays
+            simulation.states = None
+            simulation.occupations = None
+
+            # Store results
+            results.append({
+                'task': task,
+                'graph': graph,
+                'simulation': simulation,
+                'rank': rank,
+                'task_idx': task_index
+            })
+        else:
+            raise ValueError("No task specified.")
 
     # Gather all results to rank 0
     all_results = comm.gather(results, root=0)

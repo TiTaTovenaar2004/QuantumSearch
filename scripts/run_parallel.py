@@ -22,7 +22,7 @@ def main():
     task_list = []
 
     # Vary graph size
-    for N in [2, 3, 4]:
+    for N in [6, 8, 9]:
         task_list.append({
             'graph_config': {
                 'graph_type': 'complete',

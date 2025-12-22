@@ -103,3 +103,49 @@ class Simulation:
 
         end_time = time.time()
         self.running_time_calculation_time = end_time - start_time
+
+    def summary(self):
+        """Return a formatted summary of the simulation."""
+        lines = []
+        lines.append("="*60)
+        lines.append("SIMULATION SUMMARY")
+        lines.append("="*60)
+
+        # Basic parameters
+        lines.append(f"Graph type: {self.params.get('graph_type', 'N/A')}")
+        lines.append(f"N (vertices): {self.params.get('N', 'N/A')}")
+        lines.append(f"M (particles): {self.params.get('M', 'N/A')}")
+        lines.append(f"Marked vertex: {self.params.get('marked vertex', 'N/A')}")
+        lines.append(f"Search type: {self.params.get('search_type', 'N/A')}")
+
+        # Time parameters
+        lines.append(f"\nTime range: [0, {self.params.get('T', 'N/A')}]")
+        lines.append(f"Time steps: {self.params.get('number_of_time_steps', 'N/A')}")
+        if self.times is not None:
+            lines.append(f"Actual time points: {len(self.times)}")
+
+        # Data availability
+        lines.append(f"\nData availability:")
+        lines.append(f"  States: {'Yes' if self.states is not None else 'No'}")
+        lines.append(f"  Occupations: {'Yes' if self.occupations is not None else 'No'}")
+        if self.occupations is not None:
+            lines.append(f"  Occupation shape: {self.occupations.shape}")
+
+        # Computation times
+        lines.append(f"\nComputation times:")
+        lines.append(f"  Hopping rate: {self.hopping_rate_calculation_time:.4f}s")
+        lines.append(f"  Simulation: {self.simulation_calculation_time:.4f}s")
+        if self.running_time_calculation_time is not None:
+            lines.append(f"  Running times: {self.running_time_calculation_time:.4f}s")
+            lines.append(f"  Total: {self.hopping_rate_calculation_time + self.simulation_calculation_time + self.running_time_calculation_time:.4f}s")
+        else:
+            lines.append(f"  Total: {self.hopping_rate_calculation_time + self.simulation_calculation_time:.4f}s")
+
+        # Running times analysis
+        if self.lowest_running_times is not None:
+            lines.append(f"\nLowest running times:")
+            for i, (t, r) in enumerate(zip(self.lowest_running_times, self.rounds_of_lowest_running_times)):
+                lines.append(f"  Threshold {i+1}: {t:.4f} (rounds: {r})")
+
+        lines.append("="*60)
+        return "\n".join(lines)

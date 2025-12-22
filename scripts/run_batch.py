@@ -21,10 +21,10 @@ def main():
     task_list = []
 
     # Vary graph size
-    for N in [5, 10, 15, 20]:
+    for N in [2, 3, 4, 5, 6, 7, 8]:
         task_list.append({
             'graph_config': {
-                'graph_type': 'line',
+                'graph_type': 'complete',
                 'N': N
             },
             'time_config': {
@@ -34,9 +34,9 @@ def main():
             },
             'simulation_config': {
                 'search_type': 'fermionic',
-                'M': 3,
+                'M': 2,
                 'hopping_rate': None,
-                'output': 'occupations'
+                'output': 'states'
             },
         })
 
