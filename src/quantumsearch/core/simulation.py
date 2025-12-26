@@ -2,27 +2,127 @@ import numpy as np
 from qutip import *
 import time
 
+from quantumsearch.core.bosonic_search import bosonic_search
+from quantumsearch.core.fermionic_search import fermionic_search
 from quantumsearch.core.majority_vote_operator import majority_vote_operator
-from quantumsearch.core.utils import determine_success_time
+from quantumsearch.core.utils import determine_success_time, bosonic_number_operator, fermionic_number_operator
 
 class Simulation:
-    def __init__(self, states, occupations, times, graph, params):
-        self.states = states
-        self.occupations = occupations
-        self.times = times
+    def __init__(self, search_type, M, graph, hopping_rate = None):
+        # --- General attributes ---
+        self.states = np.array([])
+        self.times = np.array([])
+        self.w_occupations = np.array([])
+        self.occupation_times = np.array([])
+        self.total_simulation_time = 0
+        self.status = 'Initialized'
+
+        # --- Parameters ---
+        if search_type not in ['bosonic', 'fermionic']:
+            raise ValueError("The 'search_type' parameter must be either 'bosonic' or 'fermionic'.")
+        self.search_type = search_type
+        self.M = M
         self.graph = graph
-        self.params = params
+        if hopping_rate == None:
+            try :
+                self.hopping_rate = graph.hopping_rate
+            except AttributeError:
+                graph.calculate_hopping_rate()
+                self.hopping_rate = graph.hopping_rate
+        else:
+            self.hopping_rate = hopping_rate
 
-        self.success_probabilities = None # [[success probabilities for MV of rounds[0] rounds], [success probabilities for MV of rounds[1] rounds], ...]
-        self.rounds = None # List of the number of rounds used in the majority vote
-        self.running_times = None # [[running times for MV of rounds[0] rounds for different thresholds], [running times for MV of rounds[1] rounds for different thresholds], ...]
-        self.lowest_running_times = None # [lowest running times for different thresholds (over all MV's)]
-        self.rounds_of_lowest_running_times = None # [number of rounds of MV that gives the lowest running time for each threshold]
+    # --- Action that runs the simulation for some times ---
+    def simulate(self, times):
+        start_time = time.time()
 
-        self.simulation_calculation_time = self.params['simulation calculation time']
-        self.hopping_rate_calculation_time = graph.hopping_rate_calculation_time
-        self.running_time_calculation_time = None
+        # Filter out times that are already in self.times
+        new_times = np.array([t for t in times if t not in self.times])
 
+        # If all times already exist, skip simulation
+        if len(new_times) == 0:
+            return
+
+        if self.search_type == 'bosonic':
+            states = bosonic_search(self.M, self.graph, self.hopping_rate, new_times)
+        else:
+            states = fermionic_search(self.M, self.graph, self.hopping_rate, new_times)
+
+        # Add new states and times to existing arrays
+        self.states = np.append(self.states, states)
+        self.times = np.append(self.times, new_times)
+
+        # Sort chronologically while maintaining correspondence
+        sorted_indices = np.argsort(self.times)
+        self.times = self.times[sorted_indices]
+        self.states = self.states[sorted_indices]
+
+        # Update total simulation time
+        end_time = time.time()
+        self.total_simulation_time += end_time - start_time
+
+    # --- Action that calculates marked vertex occupations for some times ---
+    def calculate_w_occupations(self, times):
+        start_time = time.time()
+
+        # Check if all given times are in self.times
+        if not all(t in self.times for t in times):
+            missing_times = [t for t in times if t not in self.times]
+            raise ValueError(f"The following times are not in self.times: {missing_times}")
+
+        # Get the appropriate number operator
+        if self.search_type == 'bosonic':
+            num_op = bosonic_number_operator(self.graph.marked_vertex, self.graph.N, self.M)
+        else:
+            num_op = fermionic_number_operator(self.graph.marked_vertex, self.graph.N)
+
+        # Calculate occupations for the requested times
+        occupations = []
+        for t in times:
+            # Find the index of this time in self.times
+            idx = np.where(self.times == t)[0][0]
+            # Get the corresponding state
+            state = self.states[idx]
+            # Calculate expectation value of number operator
+            occupation = expect(num_op, state)
+            occupations.append(occupation)
+
+        # Add new occupations and times to existing arrays
+        self.w_occupations = np.append(self.w_occupations, occupations)
+        self.occupation_times = np.append(self.occupation_times, times)
+
+        # Sort chronologically while maintaining correspondence
+        sorted_indices = np.argsort(self.occupation_times)
+        self.occupation_times = self.occupation_times[sorted_indices]
+        self.w_occupations = self.w_occupations[sorted_indices]
+
+        end_time = time.time()
+        self.total_simulation_time += end_time - start_time
+
+    # --- Action that checks the number of extrema in the occupations ---
+    def number_of_extrema(self):
+        start_time = time.time()
+
+        if len(self.w_occupations) < 3:
+            return 0
+
+        # Calculate differences between consecutive points
+        diff = np.diff(self.w_occupations)
+
+        # Count local maxima: points where slope changes from positive to negative
+        # (diff[i-1] > 0 and diff[i] < 0)
+        maxima = np.sum((diff[:-1] > 0) & (diff[1:] < 0))
+
+        # Count local minima: points where slope changes from negative to positive
+        # (diff[i-1] < 0 and diff[i] > 0)
+        minima = np.sum((diff[:-1] < 0) & (diff[1:] > 0))
+
+        end_time = time.time()
+        self.total_simulation_time += end_time - start_time
+
+        return maxima + minima
+
+    # ------ Old methods ------
     # --- Majority vote method ---
     def calculate_success_probabilities(self, rounds):
         # Check if rounds is a list of strictly positive integers and sort it in ascending order
@@ -104,48 +204,57 @@ class Simulation:
         end_time = time.time()
         self.running_time_calculation_time = end_time - start_time
 
-    def summary(self):
-        """Return a formatted summary of the simulation."""
-        lines = []
-        lines.append("="*60)
-        lines.append("SIMULATION SUMMARY")
-        lines.append("="*60)
 
-        # Basic parameters
-        lines.append(f"Graph type: {self.params.get('graph_type', 'N/A')}")
-        lines.append(f"N (vertices): {self.params.get('N', 'N/A')}")
-        lines.append(f"M (particles): {self.params.get('M', 'N/A')}")
-        lines.append(f"Marked vertex: {self.params.get('marked vertex', 'N/A')}")
-        lines.append(f"Search type: {self.params.get('search_type', 'N/A')}")
+def time_adjustment(sim, num_time_steps=1000):
+    start_time = time.time()
 
-        # Time parameters
-        lines.append(f"\nTime range: [0, {self.params.get('T', 'N/A')}]")
-        lines.append(f"Time steps: {self.params.get('number_of_time_steps', 'N/A')}")
-        if self.times is not None:
-            lines.append(f"Actual time points: {len(self.times)}")
+    # Initial simulation
+    initial_times = np.linspace(0, 99, 100)
+    sim.simulate(initial_times)
+    sim.calculate_w_occupations(initial_times)
+    number_of_extrema = sim.number_of_extrema()
 
-        # Data availability
-        lines.append(f"\nData availability:")
-        lines.append(f"  States: {'Yes' if self.states is not None else 'No'}")
-        lines.append(f"  Occupations: {'Yes' if self.occupations is not None else 'No'}")
-        if self.occupations is not None:
-            lines.append(f"  Occupation shape: {self.occupations.shape}")
+    # Expand time range if no extrema found
+    while number_of_extrema == 0:
+        T_1 = sim.times[-1] + 1
+        T_2 = 2 * T_1 - 1
+        times = np.linspace(T_1, T_2, 100)
+        sim.simulate(times)
+        sim.calculate_w_occupations(times)
+        number_of_extrema = sim.number_of_extrema()
 
-        # Computation times
-        lines.append(f"\nComputation times:")
-        lines.append(f"  Hopping rate: {self.hopping_rate_calculation_time:.4f}s")
-        lines.append(f"  Simulation: {self.simulation_calculation_time:.4f}s")
-        if self.running_time_calculation_time is not None:
-            lines.append(f"  Running times: {self.running_time_calculation_time:.4f}s")
-            lines.append(f"  Total: {self.hopping_rate_calculation_time + self.simulation_calculation_time + self.running_time_calculation_time:.4f}s")
-        else:
-            lines.append(f"  Total: {self.hopping_rate_calculation_time + self.simulation_calculation_time:.4f}s")
+    # Contract time range if too many extrema
+    while number_of_extrema > 40:
+        T = sim.times[-1]
+        T = T / 2
+        times = np.linspace(0, T, 100)
+        sim.simulate(times)
+        sim.calculate_w_occupations(times)
+        number_of_extrema = sim.number_of_extrema()
 
-        # Running times analysis
-        if self.lowest_running_times is not None:
-            lines.append(f"\nLowest running times:")
-            for i, (t, r) in enumerate(zip(self.lowest_running_times, self.rounds_of_lowest_running_times)):
-                lines.append(f"  Threshold {i+1}: {t:.4f} (rounds: {r})")
+    # Get final extrema count and time range
+    number_of_extrema = sim.number_of_extrema()
+    T = sim.times[-1]
 
-        lines.append("="*60)
-        return "\n".join(lines)
+    # Clear temporary data
+    sim.states = np.array([])
+    sim.times = np.array([])
+    sim.w_occupations = np.array([])
+    sim.occupation_times = np.array([])
+
+    # Final simulation
+    if number_of_extrema >= 20:
+        times = np.linspace(0, T, num_time_steps)
+        sim.simulate(times)
+    else:
+        # Adjust T to get approximately 30 extrema
+        T_new = T * (30 / number_of_extrema)
+        times = np.linspace(0, T_new, num_time_steps)
+        sim.simulate(times)
+
+    sim.status = 'Simulated'
+
+    end_time = time.time()
+    sim.total_simulation_time = end_time - start_time
+
+    return sim

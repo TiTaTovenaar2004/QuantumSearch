@@ -27,21 +27,26 @@ def orthonormalize_eigenvectors(eigenvalues, eigenvectors):
                 new_eigenvectors[:, start_idx + i] = vec
         else:
             current_idx += 1
-    
+
     return new_eigenvectors
 
-# Calculate critical hopping rate for complete graph
-def critical_hopping_rate(graph):
-    return 1 / graph.number_of_nodes()
+# --- Quantum operators ---
+# Bosonic number operator
+def bosonic_number_operator(site, N, M): # Counts the number of bosons at a given site
+        dim_per_site = M + 1
+        ops = []
+        for i in range(N):
+            if i != site:
+                ops.append(qeye(dim_per_site))
+            else:
+                ops.append(num(dim_per_site))
 
-# Determine the number of extrema in the search
-def number_of_extrema(data):
-    data_shifted = np.roll(data, -1)
-    increasing = (data_shifted > data).astype(int)
-    increasing_shifted = np.roll(increasing, -1)
-    extrema = increasing - increasing_shifted
-    
-    return np.sum(abs(extrema))
+        return tensor(ops)
+
+# Fermionic number operator
+def fermionic_number_operator(site, N):
+
+        return fcreate(N, site) * fdestroy(N, site)
 
 # --- Functions for the majority vote operator ---
 # Determines all combinations m_1, ..., m_r such that m1 + ... + mr = m_tot
@@ -87,7 +92,7 @@ def determine_success_time(thresholds, success_probabilities, times):
                 for threshold in range(current_threshold_index, len(thresholds)):
                     success_times.append(math.inf)
                 break
-    
+
     return np.array(success_times)
 
 # --- Testing functions ---
@@ -107,5 +112,5 @@ def to_fock(fock_state, dim_per_site): # fock_state: [ [1, 0, 0], [0, 1, 0] ] =>
         for i in round:
             temp.append(i)
     state = tensor(basis(dim_per_site, i) for i in temp)
-    
+
     return state
