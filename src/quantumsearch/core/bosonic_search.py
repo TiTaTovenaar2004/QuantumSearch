@@ -3,9 +3,6 @@ import math
 from qutip import *
 import time
 
-from quantumsearch.core.simulation import Simulation
-from quantumsearch.core.utils import number_of_extrema
-
 def bosonic_search(
     M, # Number of bosons
     graph, # Graph object

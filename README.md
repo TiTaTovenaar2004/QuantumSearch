@@ -15,3 +15,42 @@ Assuming optimal hopping rate can be determined.
 ## Run 3
 - Plan: Use same T, threshold(s) and stop condition. Simulate fermionic and bosonic search on a lot of erdos-renyi graphs (for different p's) and for each graph optimize the lowest running times over M (fermionic and bosonic separately of course).
 - Output: Plot the optimal lowest running times for both the fermionic and the bosonic search as a function of p. Does the fermionic search have an advantage for low p?
+
+# Parallel algorithm sketch
+num_time_steps = 1000
+sim.simulate([0, 1, ..., 99])
+sim.calculate_w_occupations([0, 1, ..., 99])
+number_of_extrema = sim.number_of_extrema()
+
+while number_of_extrema = 0:
+  T_1 = sim.times[-1] + 1
+  T_2 = 2*T_1
+  times = np.arange(T_1, T_2, 100)
+  sim.simulate(times)
+  sim.calculate_w_occupations(times)
+  number_of_extrema = sim.number_of_extrema()
+
+while number_of_extrema > 40:
+  T = sim.times[-1]
+  T = T / 2
+  times = np.linspace(0, T, 100)
+  sim.simulate(times)
+  sim.calculate_w_occupations(times)
+  number_of_extrema = sim.number_of_extrema()
+
+number_of_extrema = sim.number_of_extrema()
+
+sim.states = np.array([])
+sim.times = np.array([])
+sim.w_occupations = np.array([])
+sim.occupation_times = np.array([])
+
+if number_of_extrema >= 20:
+  times = np.linspace(0, T, num_time_steps)
+  sim.simulate(times)
+else:
+  T = sim.times[-1] + 1
+  T_new = T / (number_of_extrema / 30)
+  times = np.linspace(0, T_new, num_time_steps)
+  sim.simulate(times)
+

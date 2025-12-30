@@ -2,7 +2,23 @@ import numpy as np
 import math
 from qutip import *
 
-# --- General utility functions ---
+# --- Sampling analysis ---
+# Calculate the necessary number of samples based on Hoeffding's inequality
+def number_of_samples(precision, confidence):
+    """
+    :param precision: accuracy for your guess of the mean (e.g., 0.05 for 5% precision)
+    :param confidence: desired confidence level (e.g., 0.95 for 95% confidence)
+    :return: number of samples needed to achieve the specified precision and confidence
+    """
+
+    if not (0 < confidence < 1):
+        raise ValueError("Confidence level must be between 0 and 1.")
+    if precision <= 0:
+        raise ValueError("Precision must be a positive number.")
+
+    return math.ceil(math.log((1 - confidence) / 2) / (-2*(precision ** 2)))
+
+# --- Eigenvector manipulation ---
 # Returns list of orthonormalized vectors
 def orthonormalize_vectors(vecs):
     M = np.stack(vecs, axis=1)

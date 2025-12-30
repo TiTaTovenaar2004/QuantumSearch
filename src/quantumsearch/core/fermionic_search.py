@@ -2,9 +2,6 @@ import numpy as np
 from qutip import *
 import time
 
-from quantumsearch.core.simulation import Simulation
-from quantumsearch.core.utils import number_of_extrema
-
 def fermionic_search(
     M, # Number of fermions
     graph, # Graph object

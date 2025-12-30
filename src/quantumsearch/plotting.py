@@ -3,54 +3,22 @@ from matplotlib import pyplot as plt
 from qutip import *
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 
-# --- Plot site populations ---
-def plot_site_occupations(simulation, filename='plot_site_occupations.png'):
-    occupations = simulation.occupations
-
-    if occupations is None:
-            raise ValueError("Site populations can only be plotted if the occupations were calculated during the simulation.")
-
-    T = simulation.params['T']
-
-    # --- Plot site populations ---
-    plt.figure(figsize=(8, 5))
-    plt.tight_layout()
-
-    # Plot the color map of site populations
-    plt.imshow(np.array(occupations, dtype=float),
-               aspect='auto',
-               cmap='jet',
-               interpolation='nearest',
-               extent=[0, T, len(occupations) + 0.5, 0.5]) # y from 0.5 to num_rows + 0.5
-
-
-    # Labels
-    plt.xlabel('Time', fontsize=12)
-    plt.ylabel('Vertex', fontsize=12)
-
-    # Colorbar
-    plt.colorbar(label='Population')
-
-    # Set y-ticks: one tick per row
-    plt.yticks(np.arange(1, len(occupations) + 1))
-    plt.tick_params(axis='y', which='both', right=True, labelright=True)
-
-    plt.savefig(filename)
-    plt.close()
-
-
 # --- Plot marked vertex occupation distribution ---
-def plot_marked_vertex_occupation_distribution(simulation, filename='marked_vertex_occupation_distribution.png'): # Plots the occupation distribution of the marked vertex at time T
-    if simulation.states is None:
+def plot_marked_vertex_occupation_distribution(simulation, filename='results/plots/marked_vertex_occupation_distribution.png'): # Plots the occupation distribution of the marked vertex at time T
+    if len(simulation.states) == 0:
         raise ValueError("States are required to plot the marked vertex occupation distribution.")
 
     state = simulation.states[-1]  # Final state
-    params = simulation.params
 
-    # Unpack parameters
-    N = params['N']
-    dim_per_site = params['dim per site']
-    marked_vertex = params['marked vertex']
+    # Get parameters from simulation object
+    N = simulation.graph.N
+    marked_vertex = simulation.graph.marked_vertex
+
+    # Determine dimension per site based on search type
+    if simulation.search_type == 'bosonic':
+        dim_per_site = simulation.M + 1  # Bosonic: 0 to M particles per site
+    else:  # fermionic
+        dim_per_site = 2  # Fermionic: 0 or 1 particle per site
 
     probs = np.zeros(dim_per_site)
 
@@ -65,7 +33,7 @@ def plot_marked_vertex_occupation_distribution(simulation, filename='marked_vert
                 projector_ops.append(qeye(dim_per_site))
         P_k = tensor(projector_ops)
 
-        # Probability of measuring k bosons at the marked vertex
+        # Probability of measuring k particles at the marked vertex
         probs[k] = expect(P_k, state)
 
     # Plot histogram
@@ -80,18 +48,22 @@ def plot_marked_vertex_occupation_distribution(simulation, filename='marked_vert
     plt.close()
 
 # --- Animate marked vertex occupation distribution ---
-def animate_marked_vertex_distribution(simulation, filename='marked_vertex_occupation_distribution_animation.mp4'):
-    if simulation.states is None:
+def animate_marked_vertex_distribution(simulation, filename='results/plots/marked_vertex_occupation_distribution_animation.mp4'):
+    if len(simulation.states) == 0:
         raise ValueError("States are required to animate the marked vertex occupation distribution.")
 
     states = simulation.states
     times = simulation.times
-    params = simulation.params
 
-    # Unpack parameters
-    N = params['N']
-    dim_per_site = params['dim per site']
-    marked_vertex = params['marked vertex']
+    # Get parameters from simulation object
+    N = simulation.graph.N
+    marked_vertex = simulation.graph.marked_vertex
+
+    # Determine dimension per site based on search type
+    if simulation.search_type == 'bosonic':
+        dim_per_site = simulation.M + 1  # Bosonic: 0 to M particles per site
+    else:  # fermionic
+        dim_per_site = 2  # Fermionic: 0 or 1 particle per site
 
     # Precompute probabilities P_k(t) for all times
     probs_time = np.zeros((len(times), dim_per_site))
@@ -135,7 +107,7 @@ def animate_marked_vertex_distribution(simulation, filename='marked_vertex_occup
     return ani
 
 # --- Plot success probabilities ---
-def plot_success_probabilities(simulation, filename='plot_success_probabilities.png'):
+def plot_success_probabilities(simulation, filename='results/plots/plot_success_probabilities.png'):
     if simulation.success_probabilities is None or simulation.rounds is None:
         raise ValueError("Success probabilities have not been calculated yet. Please run the 'calculate_success_probabilities'-method first.")
 
@@ -157,7 +129,7 @@ def plot_success_probabilities(simulation, filename='plot_success_probabilities.
     plt.close()
 
 # --- Plot with error bars or shaded region ---
-def plot_with_error(x, y, filename='plot_with_error.png', shaded=True, percentiles=(0.5, 99.5)):
+def plot_with_error(x, y, filename='results/plots/plot_with_error.png', shaded=True, percentiles=(0.5, 99.5)):
     """
     Plots the mean of measurements with error bars or shaded region containing 99% of values.
 
