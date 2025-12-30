@@ -43,31 +43,14 @@ def main():
             },
             'times': times,
             'estimation_config': {
-                'number_of_rounds': 5,
+                'number_of_rounds': [1, 3, 5, 7],  # Multiple rounds
+                'threshold': 0.8,
                 'precision': 0.02,
                 'confidence': 0.95,
             }
         },
 
-        # Task 2: Bosonic search on complete graph N=5, M=2
-        {
-            'graph_config': {
-                'graph_type': 'complete',
-                'N': 5,
-            },
-            'simulation_config': {
-                'search_type': 'bosonic',
-                'M': 2,
-            },
-            'times': times,
-            'estimation_config': {
-                'number_of_rounds': 5,
-                'precision': 0.02,
-                'confidence': 0.95,
-            }
-        },
-
-        # Task 3: Fermionic search on complete graph N=5, M=2
+        # Task 2: Fermionic search on complete graph N=5, M=2
         {
             'graph_config': {
                 'graph_type': 'complete',
@@ -79,85 +62,33 @@ def main():
             },
             'times': times,
             'estimation_config': {
-                'number_of_rounds': 5,
+                'number_of_rounds': [1, 3, 5, 7],  # Multiple rounds
+                'threshold': 0.8,
                 'precision': 0.02,
                 'confidence': 0.95,
             }
         },
 
-        # Task 4: Fermionic search on complete graph N=6, M=2
-        {
-            'graph_config': {
-                'graph_type': 'complete',
-                'N': 6,
-            },
-            'simulation_config': {
-                'search_type': 'fermionic',
-                'M': 2,
-            },
-            'times': times,
-            'estimation_config': {
-                'number_of_rounds': 5,
-                'precision': 0.02,
-                'confidence': 0.95,
-            }
-        },
-
-        # Task 5: Bosonic search on cycle graph N=5, M=2
-        {
-            'graph_config': {
-                'graph_type': 'cycle',
-                'N': 5,
-            },
-            'simulation_config': {
-                'search_type': 'bosonic',
-                'M': 2,
-            },
-            'times': times,
-            'estimation_config': {
-                'number_of_rounds': 3,
-                'precision': 0.02,
-                'confidence': 0.95,
-            }
-        },
-
-        # Task 6: Fermionic search on cycle graph N=6, M=1
+        # Task 3: Bosonic search on cycle graph N=6, M=2
         {
             'graph_config': {
                 'graph_type': 'cycle',
                 'N': 6,
             },
             'simulation_config': {
-                'search_type': 'fermionic',
-                'M': 1,
-            },
-            'times': times,
-            'estimation_config': {
-                'number_of_rounds': 3,
-                'precision': 0.02,
-                'confidence': 0.95,
-            }
-        },
-
-        # Task 7: Bosonic search on line graph N=5, M=2
-        {
-            'graph_config': {
-                'graph_type': 'line',
-                'N': 5,
-            },
-            'simulation_config': {
                 'search_type': 'bosonic',
                 'M': 2,
             },
             'times': times,
             'estimation_config': {
-                'number_of_rounds': 3,
+                'number_of_rounds': [1, 3, 5, 7],  # Multiple rounds
+                'threshold': 0.8,
                 'precision': 0.02,
                 'confidence': 0.95,
             }
         },
 
-        # Task 8: Bosonic search on Erdos-Renyi graph N=6, M=2
+        # Task 4: Bosonic search on Erdos-Renyi graph N=6, M=2
         {
             'graph_config': {
                 'graph_type': 'erdos-renyi',
@@ -170,7 +101,8 @@ def main():
             },
             'times': times,
             'estimation_config': {
-                'number_of_rounds': 3,
+                'number_of_rounds': [1, 3, 5, 7],  # Multiple rounds
+                'threshold': 0.8,
                 'precision': 0.02,
                 'confidence': 0.95,
             }
@@ -202,12 +134,15 @@ def main():
             print(f"  Estimation time: {result['estimation_time']:.2f} s")
 
             if result['estimated_success_probabilities']:
-                est_result = result['estimated_success_probabilities'][0]
-                max_prob = np.max(est_result['probabilities'])
-                print(f"  Max estimated success probability: {max_prob:.4f}")
-                print(f"    (Rounds: {est_result['rounds']}, "
-                      f"Precision: {est_result['precision']}, "
-                      f"Confidence: {est_result['confidence']})")
+                print(f"  Estimated success probabilities for {len(result['estimated_success_probabilities'])} different rounds:")
+                for est_result in result['estimated_success_probabilities']:
+                    max_prob = np.max(est_result['probabilities'])
+                    print(f"    Rounds={est_result['rounds']}: Max prob={max_prob:.4f}, "
+                          f"Precision={est_result['precision']}, "
+                          f"Confidence={est_result['confidence']}")
+                    if 'lower_running_time' in est_result and not np.isinf(est_result['lower_running_time']):
+                        print(f"      Running time: [{est_result['lower_running_time']:.4f}, "
+                              f"{est_result['upper_running_time']:.4f}]")
 
         print()
         print("=" * 60)

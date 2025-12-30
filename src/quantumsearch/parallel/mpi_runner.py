@@ -28,7 +28,7 @@ def run_parallel_simulations(task_configs):
     task_configs : list of dict
         List of configuration dictionaries, each defining one simulation task.
         Each dict must contain:
-        
+
         'graph_config': dict
             Parameters for Graph constructor:
             - 'graph_type': str ('complete', 'cycle', 'line', 'erdos-renyi', 'barabasi-albert')
@@ -36,19 +36,19 @@ def run_parallel_simulations(task_configs):
             - 'p': float (optional, for 'erdos-renyi')
             - 'm': int (optional, for 'barabasi-albert')
             - 'marked_vertex': int (optional)
-        
+
         'simulation_config': dict
             Parameters for Simulation:
             - 'search_type': str ('bosonic' or 'fermionic')
             - 'M': int (number of particles)
             - 'hopping_rate': float (optional)
-        
+
         'times': array-like
             Time points at which to evaluate the quantum state
-        
+
         'estimation_config': dict (optional)
             Parameters for success probability estimation:
-            - 'number_of_rounds': int
+            - 'number_of_rounds': list of int
             - 'precision': float
             - 'confidence': float
 
@@ -93,7 +93,7 @@ def run_parallel_simulations(task_configs):
         # - Create Graph from config
         graph_config = task_config['graph_config']
         graph = Graph(**graph_config)
-        
+
         # - Create Simulation object
         sim_config = task_config['simulation_config']
         simulation = Simulation(
@@ -102,20 +102,21 @@ def run_parallel_simulations(task_configs):
             graph=graph,
             hopping_rate=sim_config.get('hopping_rate', None)
         )
-        
+
         # - Run simulation with simulate(times)
         times = task_config['times']
         simulation.simulate(times)
-        
+
         # - Calculate/estimate success probabilities
         if 'estimation_config' in task_config:
             est_config = task_config['estimation_config']
             simulation.estimate_success_probabilities(
                 number_of_rounds=est_config['number_of_rounds'],
+                threshold=est_config['threshold'],
                 precision=est_config['precision'],
                 confidence=est_config['confidence']
             )
-        
+
         # - Extract and store relevant results
         result = {
             'rank': rank,
@@ -170,19 +171,19 @@ def save_results(results, output_dir='results/data'):
     import os
     import json
     from datetime import datetime
-    
+
     # - Create output directory if needed
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Generate timestamp for this run
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    
+
     # - Save individual simulation results
     for i, result in enumerate(results):
         # Create filename based on task parameters
         filename = f"task_{i}_{result['graph_type']}_N{result['N']}_{result['search_type']}_M{result['M']}_{timestamp}.npz"
         filepath = os.path.join(output_dir, filename)
-        
+
         # Prepare data for saving (convert to serializable format)
         save_data = {
             'graph_type': result['graph_type'],
@@ -194,7 +195,7 @@ def save_results(results, output_dir='results/data'):
             'simulation_time': result['simulation_time'],
             'estimation_time': result['estimation_time'],
         }
-        
+
         # Add estimated success probabilities
         if result['estimated_success_probabilities']:
             for j, est_result in enumerate(result['estimated_success_probabilities']):
@@ -202,13 +203,16 @@ def save_results(results, output_dir='results/data'):
                 save_data[f'precision_{j}'] = est_result['precision']
                 save_data[f'confidence_{j}'] = est_result['confidence']
                 save_data[f'probabilities_{j}'] = est_result['probabilities']
-        
+                save_data[f'threshold_{j}'] = est_result['threshold']
+                save_data[f'lower_running_time_{j}'] = est_result['lower_running_time']
+                save_data[f'upper_running_time_{j}'] = est_result['upper_running_time']
+
         # Save to .npz file
         np.savez(filepath, **save_data)
-    
+
     # - Save summary/aggregate results
     summary_filepath = os.path.join(output_dir, f'summary_{timestamp}.json')
-    
+
     summary = {
         'timestamp': timestamp,
         'total_tasks': len(results),
@@ -238,16 +242,16 @@ def save_results(results, output_dir='results/data'):
             for i, r in enumerate(results)
         ]
     }
-    
+
     with open(summary_filepath, 'w') as f:
         json.dump(summary, f, indent=2)
-    
+
     print(f"\nResults saved to {output_dir}/")
     print(f"  - {len(results)} individual result files (.npz)")
     print(f"  - 1 summary file: summary_{timestamp}.json")
 
 
-def load_results(input_dir='results/data'):
+def load_results(input_dir='results/data', timestamp=None):
     """
     Load previously saved simulation results.
 
@@ -255,17 +259,107 @@ def load_results(input_dir='results/data'):
     -----------
     input_dir : str
         Directory containing saved results
+    timestamp : str, optional
+        Specific timestamp to load (format: YYYYMMDD_HHMMSS).
+        If None, loads the most recent run.
 
     Returns:
     --------
     results : list
-        List of result dictionaries
-
-    Structure:
-    ----------
-    User should implement loading logic matching save_results format
+        List of result dictionaries, each containing:
+        - task_id, graph_type, N, search_type, M, hopping_rate
+        - times, probabilities (from estimation)
+        - simulation_time, estimation_time
+    summary : dict
+        Summary information about the run
     """
 
-    # TODO: Implement result loading logic
+    import os
+    import json
 
-    pass
+    # Find the run to load
+    if timestamp is None:
+        # Find most recent run based on timestamp
+        if not os.path.exists(input_dir):
+            raise FileNotFoundError(f"Data directory not found: {input_dir}")
+
+        # Find all summary files
+        summary_files = [f for f in os.listdir(input_dir)
+                        if f.startswith('summary_') and f.endswith('.json')]
+
+        if not summary_files:
+            raise FileNotFoundError(f"No summary files found in {input_dir}")
+
+        # Sort by timestamp (embedded in filename) - most recent first
+        summary_files.sort(reverse=True)
+        latest_summary = summary_files[0]
+
+        # Extract timestamp
+        timestamp = latest_summary.replace('summary_', '').replace('.json', '')
+        summary_path = os.path.join(input_dir, latest_summary)
+    else:
+        summary_path = os.path.join(input_dir, f'summary_{timestamp}.json')
+
+    # Load summary
+    with open(summary_path, 'r') as f:
+        summary = json.load(f)
+
+    # Load individual result files
+    results = []
+
+    for task_info in summary['tasks']:
+        task_id = task_info['task_id']
+        graph_type = task_info['graph_type']
+        N = task_info['N']
+        search_type = task_info['search_type']
+        M = task_info['M']
+
+        # Construct filename
+        filename = f"task_{task_id}_{graph_type}_N{N}_{search_type}_M{M}_{timestamp}.npz"
+        filepath = os.path.join(input_dir, filename)
+
+        # Load data
+        if not os.path.exists(filepath):
+            print(f"Warning: File not found: {filename}")
+            continue
+
+        data = np.load(filepath)
+
+        # Extract data
+        result = {
+            'task_id': task_id,
+            'graph_type': str(data['graph_type']),
+            'N': int(data['N']),
+            'search_type': str(data['search_type']),
+            'M': int(data['M']),
+            'hopping_rate': float(data['hopping_rate']),
+            'times': data['times'],
+            'simulation_time': float(data['simulation_time']),
+            'estimation_time': float(data['estimation_time']),
+            'estimated_success_probabilities': []
+        }
+
+        # Extract estimated success probabilities
+        i = 0
+        while f'probabilities_{i}' in data.keys():
+            est_result = {
+                'rounds': int(data[f'rounds_{i}']),
+                'precision': float(data[f'precision_{i}']),
+                'confidence': float(data[f'confidence_{i}']),
+                'probabilities': data[f'probabilities_{i}']
+            }
+
+            # Load running time bounds if available
+            if f'lower_running_time_{i}' in data.keys():
+                est_result['lower_running_time'] = float(data[f'lower_running_time_{i}'])
+            if f'upper_running_time_{i}' in data.keys():
+                est_result['upper_running_time'] = float(data[f'upper_running_time_{i}'])
+            if f'threshold_{i}' in data.keys():
+                est_result['threshold'] = float(data[f'threshold_{i}'])
+
+            result['estimated_success_probabilities'].append(est_result)
+            i += 1
+
+        results.append(result)
+
+    return results, summary

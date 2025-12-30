@@ -128,7 +128,7 @@ class Simulation:
         return maxima + minima
 
     # --- Action that estimates success probabilities via sampling ---
-    def estimate_success_probabilities(self, number_of_rounds, precision, confidence):
+    def estimate_success_probabilities(self, number_of_rounds, threshold, precision=0.01, confidence=0.999):
         start_time = time.time()
 
         if len(self.states) == 0:
@@ -178,6 +178,35 @@ class Simulation:
                 'confidence': confidence,
                 'probabilities': np.array(estimated_probs)
             }
+            
+            # Calculate lower and upper bounds for running time
+            # Lower bound: optimistic case (estimated + precision)
+            # Upper bound: pessimistic case (estimated - precision)
+            probs_array = np.array(estimated_probs)
+            
+            # Lower bound: first time where (estimated + precision) >= threshold
+            optimistic_probs = probs_array + precision
+            above_threshold_optimistic = optimistic_probs >= threshold
+            
+            if np.any(above_threshold_optimistic):
+                first_idx_optimistic = np.argmax(above_threshold_optimistic)
+                lower_running_time = self.times[first_idx_optimistic] * rounds
+            else:
+                lower_running_time = np.inf
+            
+            # Upper bound: first time where (estimated - precision) >= threshold
+            pessimistic_probs = probs_array - precision
+            above_threshold_pessimistic = pessimistic_probs >= threshold
+            
+            if np.any(above_threshold_pessimistic):
+                first_idx_pessimistic = np.argmax(above_threshold_pessimistic)
+                upper_running_time = self.times[first_idx_pessimistic] * rounds
+            else:
+                upper_running_time = np.inf
+            
+            result['lower_running_time'] = lower_running_time
+            result['upper_running_time'] = upper_running_time
+            result['threshold'] = threshold
 
             # Append to list
             if not hasattr(self, 'estimated_success_probabilities') or len(self.estimated_success_probabilities) == 0:

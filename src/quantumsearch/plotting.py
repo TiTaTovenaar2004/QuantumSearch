@@ -167,3 +167,117 @@ def plot_with_error(x, y, filename='results/plots/plot_with_error.png', shaded=T
     plt.legend()
     plt.savefig(filename)
     plt.close()
+
+# --- Plot estimated success probabilities for multiple tasks ---
+def plot_estimated_success_probabilities(results, output_dir='results/plots', timestamp=None):
+    """
+    Plot estimated success probabilities for each task in the results.
+
+    Creates individual plots for each task showing how the success probability
+    evolves over time.
+
+    Parameters:
+    -----------
+    results : list
+        List of result dictionaries from load_results, each containing:
+        - task_id, graph_type, N, search_type, M
+        - times: array of time points
+        - estimated_success_probabilities: list of estimation results
+    output_dir : str
+        Directory to save plots
+    timestamp : str, optional
+        Timestamp string to include in filenames
+
+    Returns:
+    --------
+    None
+    """
+    import os
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Determine grid layout
+    n_tasks = len(results)
+    n_cols = min(3, n_tasks)  # Max 3 columns
+    n_rows = (n_tasks + n_cols - 1) // n_cols  # Ceiling division
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 4*n_rows))
+
+    # Handle case of single plot
+    if n_tasks == 1:
+        axes = np.array([axes])
+    axes = axes.flatten() if n_tasks > 1 else axes
+
+    for idx, result in enumerate(results):
+        ax = axes[idx] if n_tasks > 1 else axes[0]
+
+        times = result['times']
+        task_id = result['task_id']
+        graph_type = result['graph_type']
+        N = result['N']
+        search_type = result['search_type']
+        M = result['M']
+
+        # Plot each estimation (multiple rounds may be present for same task)
+        if result['estimated_success_probabilities']:
+            colors = plt.cm.viridis(np.linspace(0, 0.9, len(result['estimated_success_probabilities'])))
+
+            for est_idx, est in enumerate(result['estimated_success_probabilities']):
+                probs = est['probabilities']
+                rounds = est['rounds']
+                precision = est['precision']
+
+                # Plot main line
+                label = f"R={rounds}, ε={precision}"
+                line, = ax.plot(times, probs, '-', linewidth=2, label=label, color=colors[est_idx])
+
+                # Mark maximum
+                max_idx = np.argmax(probs)
+                ax.plot(times[max_idx], probs[max_idx], 'o', markersize=8,
+                       color=colors[est_idx], zorder=10)
+
+                # Add threshold line and running time bounds if available
+                if 'threshold' in est and 'lower_running_time' in est:
+                    threshold = est['threshold']
+                    lower_rt = est['lower_running_time']
+                    upper_rt = est['upper_running_time']
+
+                    # Add horizontal threshold line (only once)
+                    if est_idx == 0:
+                        ax.axhline(threshold, color='gray', linestyle=':',
+                                 alpha=0.5, linewidth=1, label=f'Threshold={threshold}')
+
+                    # Add vertical lines for running time bounds if threshold is reached
+                    if not np.isinf(lower_rt):
+                        lower_t = lower_rt / rounds  # Convert back to single-run time
+                        upper_t = upper_rt / rounds
+                        ax.axvline(lower_t, color=colors[est_idx], linestyle='--',
+                                 alpha=0.4, linewidth=1.5)
+                        ax.axvline(upper_t, color=colors[est_idx], linestyle='--',
+                                 alpha=0.4, linewidth=1.5)
+
+        ax.set_xlabel('Time t', fontsize=10)
+        ax.set_ylabel('Success Probability', fontsize=10)
+        ax.set_title(f'Task {task_id}: {graph_type} (N={N}, {search_type}, M={M})',
+                    fontsize=11, fontweight='bold')
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=9)
+        ax.set_ylim([0, 1.05])
+
+    # Hide unused subplots
+    for idx in range(n_tasks, len(axes)):
+        axes[idx].axis('off')
+
+    plt.tight_layout()
+
+    # Save figure
+    if timestamp:
+        filename = f'estimated_success_probabilities_{timestamp}.png'
+    else:
+        filename = 'estimated_success_probabilities.png'
+
+    filepath = os.path.join(output_dir, filename)
+    plt.savefig(filepath, dpi=150, bbox_inches='tight')
+    plt.close()
+
+    print(f"Plot saved to: {filepath}")
