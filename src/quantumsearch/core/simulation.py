@@ -134,47 +134,56 @@ class Simulation:
         if len(self.states) == 0:
             raise ValueError("States are required to estimate success probabilities.")
 
-        num_samples = number_of_samples(precision, confidence)
-        estimated_probs = []
-
-        for state in self.states:
-            # Measure the state 'num_samples' times
-            data = state.full().flatten()
-            probs = np.abs(data)**2
-
-            # Sample according to the probabilities
-            dims = tuple([self.dim_per_site] * self.graph.N)
-            indices = np.random.choice(len(probs), size=num_samples*number_of_rounds, p=probs)
-
-            # Convert indices to configurations
-            configs = np.array([np.unravel_index(idx, dims) for idx in indices])
-            configs = configs.reshape((num_samples, number_of_rounds, self.graph.N))
-
-            # Apply a majority vote over each sample
-            total_particles_per_vertex = configs.sum(axis=1)  # (num_samples, N)
-
-            marked_counts = total_particles_per_vertex[:, self.graph.marked_vertex]
-            max_other_counts = np.array([np.max(np.delete(sample, self.graph.marked_vertex)) for sample in total_particles_per_vertex])
-
-            success_count = np.sum(marked_counts > max_other_counts)
-
-            # Estimate success probability
-            estimated_prob = success_count / num_samples
-            estimated_probs.append(estimated_prob)
-
-        # Store results as a dictionary
-        result = {
-            'rounds': number_of_rounds,
-            'precision': precision,
-            'confidence': confidence,
-            'probabilities': np.array(estimated_probs)
-        }
-
-        # Append to list if storing multiple estimates
-        if not hasattr(self, 'estimated_success_probabilities') or len(self.estimated_success_probabilities) == 0:
-            self.estimated_success_probabilities = [result]
+        # Convert to list if single integer is provided
+        if isinstance(number_of_rounds, int):
+            rounds_list = [number_of_rounds]
         else:
-            self.estimated_success_probabilities.append(result)
+            rounds_list = number_of_rounds
+
+        num_samples = number_of_samples(precision, confidence)
+
+        # Process each number of rounds
+        for rounds in rounds_list:
+            estimated_probs = []
+
+            for state in self.states:
+                # Measure the state 'num_samples' times
+                data = state.full().flatten()
+                probs = np.abs(data)**2
+
+                # Sample according to the probabilities
+                dims = tuple([self.dim_per_site] * self.graph.N)
+                indices = np.random.choice(len(probs), size=num_samples*rounds, p=probs)
+
+                # Convert indices to configurations
+                configs = np.array([np.unravel_index(idx, dims) for idx in indices])
+                configs = configs.reshape((num_samples, rounds, self.graph.N))
+
+                # Apply a majority vote over each sample
+                total_particles_per_vertex = configs.sum(axis=1)  # (num_samples, N)
+
+                marked_counts = total_particles_per_vertex[:, self.graph.marked_vertex]
+                max_other_counts = np.array([np.max(np.delete(sample, self.graph.marked_vertex)) for sample in total_particles_per_vertex])
+
+                success_count = np.sum(marked_counts > max_other_counts)
+
+                # Estimate success probability
+                estimated_prob = success_count / num_samples
+                estimated_probs.append(estimated_prob)
+
+            # Store results as a dictionary
+            result = {
+                'rounds': rounds,
+                'precision': precision,
+                'confidence': confidence,
+                'probabilities': np.array(estimated_probs)
+            }
+
+            # Append to list
+            if not hasattr(self, 'estimated_success_probabilities') or len(self.estimated_success_probabilities) == 0:
+                self.estimated_success_probabilities = [result]
+            else:
+                self.estimated_success_probabilities.append(result)
 
         end_time = time.time()
         self.estimation_time += end_time - start_time
