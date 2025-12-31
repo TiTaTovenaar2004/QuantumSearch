@@ -41,13 +41,8 @@ def display_summary(results, summary):
 
         if result['estimated_success_probabilities']:
             for i, est in enumerate(result['estimated_success_probabilities']):
-                max_prob = np.max(est['probabilities'])
-                max_time_idx = np.argmax(est['probabilities'])
-                max_time = result['times'][max_time_idx]
-
                 print(f"  Estimation {i+1}:")
                 print(f"    Rounds: {est['rounds']}, Precision: {est['precision']}, Confidence: {est['confidence']}")
-                print(f"    Max probability: {max_prob:.6f} at t={max_time:.6f}")
 
                 # Display running time bounds if available
                 if 'threshold' in est and 'lower_running_time' in est:

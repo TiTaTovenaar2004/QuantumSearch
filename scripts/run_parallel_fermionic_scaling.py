@@ -7,10 +7,10 @@ using MPI. Each task runs a simulation, estimates success probabilities, and
 stores the results.
 
 Usage:
-    mpirun -n <num_processes> python run_parallel_simulations.py
+    mpirun -n <num_processes> /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_fermionic_scaling.py
 
 Example:
-    mpirun -n 4 python run_parallel_simulations.py
+    mpirun -n 8 /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_fermionic_scaling.py
 """
 
 import sys
@@ -27,87 +27,32 @@ def main():
     """
 
     # Define time points for simulations
-    times = np.linspace(0, 10, 50)
+    times = np.linspace(0, 20, 100)
 
     # Define task configurations
-    task_configs = [
-        # Task 1: Bosonic search on complete graph N=4, M=2
-        {
-            'graph_config': {
-                'graph_type': 'complete',
-                'N': 4,
-            },
-            'simulation_config': {
-                'search_type': 'bosonic',
-                'M': 2,
-            },
-            'times': times,
-            'estimation_config': {
-                'number_of_rounds': [1, 3, 5, 7],  # Multiple rounds
-                'threshold': 0.8,
-                'precision': 0.02,
-                'confidence': 0.95,
+    task_configs = []
+    for N in range(8, 10):
+        for M in range(2, N):
+            config = {
+                'graph_config': {
+                    'graph_type': 'complete',
+                    'N': N,
+                    'marked_vertex': 0
+                },
+                'simulation_config': {
+                    'search_type': 'fermionic',
+                    'M': M,
+                    'hopping_rate': None
+                },
+                'times': times,
+                'estimation_config': {
+                    'number_of_rounds': [1, 2, 3, 4, 5],
+                    'threshold': 0.8,
+                    'precision': 0.01,
+                    'confidence': 0.99
+                }
             }
-        },
-
-        # Task 2: Fermionic search on complete graph N=5, M=2
-        {
-            'graph_config': {
-                'graph_type': 'complete',
-                'N': 5,
-            },
-            'simulation_config': {
-                'search_type': 'fermionic',
-                'M': 2,
-            },
-            'times': times,
-            'estimation_config': {
-                'number_of_rounds': [1, 3, 5, 7],  # Multiple rounds
-                'threshold': 0.8,
-                'precision': 0.02,
-                'confidence': 0.95,
-            }
-        },
-
-        # Task 3: Bosonic search on cycle graph N=6, M=2
-        {
-            'graph_config': {
-                'graph_type': 'cycle',
-                'N': 6,
-            },
-            'simulation_config': {
-                'search_type': 'bosonic',
-                'M': 2,
-            },
-            'times': times,
-            'estimation_config': {
-                'number_of_rounds': [1, 3, 5, 7],  # Multiple rounds
-                'threshold': 0.8,
-                'precision': 0.02,
-                'confidence': 0.95,
-            }
-        },
-
-        # Task 4: Bosonic search on Erdos-Renyi graph N=6, M=2
-        {
-            'graph_config': {
-                'graph_type': 'erdos-renyi',
-                'N': 6,
-                'p': 0.5,
-            },
-            'simulation_config': {
-                'search_type': 'bosonic',
-                'M': 2,
-            },
-            'times': times,
-            'estimation_config': {
-                'number_of_rounds': [1, 3, 5, 7],  # Multiple rounds
-                'threshold': 0.8,
-                'precision': 0.02,
-                'confidence': 0.95,
-            }
-        },
-    ]
+            task_configs.append(config)
 
     print("=" * 60)
     print("PARALLEL QUANTUM SEARCH SIMULATIONS")

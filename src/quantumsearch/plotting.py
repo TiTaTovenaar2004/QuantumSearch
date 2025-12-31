@@ -196,77 +196,91 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # Determine grid layout
-    n_tasks = len(results)
-    n_cols = min(3, n_tasks)  # Max 3 columns
-    n_rows = (n_tasks + n_cols - 1) // n_cols  # Ceiling division
+    # Group results by N, then sort by M within each N
+    from collections import defaultdict
+    results_by_N = defaultdict(list)
+    for result in results:
+        results_by_N[result['N']].append(result)
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 4*n_rows))
+    # Sort each group by M
+    for N in results_by_N:
+        results_by_N[N].sort(key=lambda r: r['M'])
 
-    # Handle case of single plot
-    if n_tasks == 1:
-        axes = np.array([axes])
-    axes = axes.flatten() if n_tasks > 1 else axes
+    # Sort N values
+    N_values = sorted(results_by_N.keys())
 
-    for idx, result in enumerate(results):
-        ax = axes[idx] if n_tasks > 1 else axes[0]
+    # Split results into rows with max 3 columns
+    # Each N can span multiple rows if it has more than 3 M values
+    plot_rows = []
+    for N in N_values:
+        results_for_N = results_by_N[N]
+        # Chunk into groups of 3
+        for i in range(0, len(results_for_N), 3):
+            plot_rows.append(results_for_N[i:i+3])
 
-        times = result['times']
-        task_id = result['task_id']
-        graph_type = result['graph_type']
-        N = result['N']
-        search_type = result['search_type']
-        M = result['M']
+    # Determine grid dimensions
+    n_rows = len(plot_rows)
+    n_cols = 3  # Maximum 3 columns
 
-        # Plot each estimation (multiple rounds may be present for same task)
-        if result['estimated_success_probabilities']:
-            colors = plt.cm.viridis(np.linspace(0, 0.9, len(result['estimated_success_probabilities'])))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 4*n_rows), squeeze=False)
 
-            for est_idx, est in enumerate(result['estimated_success_probabilities']):
-                probs = est['probabilities']
-                rounds = est['rounds']
-                precision = est['precision']
+    # Place each result in the appropriate subplot
+    for row_idx, row_results in enumerate(plot_rows):
+        for col_idx, result in enumerate(row_results):
+            ax = axes[row_idx, col_idx]
 
-                # Plot main line
-                label = f"R={rounds}, ε={precision}"
-                line, = ax.plot(times, probs, '-', linewidth=2, label=label, color=colors[est_idx])
+            times = result['times']
+            task_id = result['task_id']
+            graph_type = result['graph_type']
+            N_val = result['N']
+            search_type = result['search_type']
+            M = result['M']
 
-                # Mark maximum
-                max_idx = np.argmax(probs)
-                ax.plot(times[max_idx], probs[max_idx], 'o', markersize=8,
-                       color=colors[est_idx], zorder=10)
+            # Plot each estimation (multiple rounds may be present for same task)
+            if result['estimated_success_probabilities']:
+                colors = plt.cm.viridis(np.linspace(0, 0.9, len(result['estimated_success_probabilities'])))
+                threshold_value = None
 
-                # Add threshold line and running time bounds if available
-                if 'threshold' in est and 'lower_running_time' in est:
-                    threshold = est['threshold']
-                    lower_rt = est['lower_running_time']
-                    upper_rt = est['upper_running_time']
+                for est_idx, est in enumerate(result['estimated_success_probabilities']):
+                    probs = est['probabilities']
+                    rounds = est['rounds']
+                    precision = est['precision']
 
-                    # Add horizontal threshold line (only once)
-                    if est_idx == 0:
-                        ax.axhline(threshold, color='gray', linestyle=':',
-                                 alpha=0.5, linewidth=1, label=f'Threshold={threshold}')
+                    # Plot main line
+                    label = f"R={rounds}"
+                    line, = ax.plot(times, probs, '-', linewidth=2, label=label, color=colors[est_idx])
 
-                    # Add vertical lines for running time bounds if threshold is reached
-                    if not np.isinf(lower_rt):
-                        lower_t = lower_rt / rounds  # Convert back to single-run time
-                        upper_t = upper_rt / rounds
-                        ax.axvline(lower_t, color=colors[est_idx], linestyle='--',
-                                 alpha=0.4, linewidth=1.5)
-                        ax.axvline(upper_t, color=colors[est_idx], linestyle='--',
-                                 alpha=0.4, linewidth=1.5)
+                    # Store threshold and add vertical line for average running time
+                    if 'threshold' in est and 'lower_running_time' in est:
+                        if threshold_value is None:
+                            threshold_value = est['threshold']
 
-        ax.set_xlabel('Time t', fontsize=10)
-        ax.set_ylabel('Success Probability', fontsize=10)
-        ax.set_title(f'Task {task_id}: {graph_type} (N={N}, {search_type}, M={M})',
-                    fontsize=11, fontweight='bold')
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=9)
-        ax.set_ylim([0, 1.05])
+                        lower_rt = est['lower_running_time']
+                        upper_rt = est['upper_running_time']
 
-    # Hide unused subplots
-    for idx in range(n_tasks, len(axes)):
-        axes[idx].axis('off')
+                        # Add vertical line at average running time if threshold is reached
+                        if not np.isinf(lower_rt):
+                            avg_rt = (lower_rt + upper_rt) / 2
+                            avg_t = avg_rt / rounds  # Convert back to single-run time
+                            ax.axvline(avg_t, color=colors[est_idx], linestyle='--',
+                                     alpha=0.4, linewidth=1.5)
+
+                # Add threshold line last (so it appears at bottom of legend)
+                if threshold_value is not None:
+                    ax.axhline(threshold_value, color='gray', linestyle=':',
+                             alpha=0.5, linewidth=1, label=f'Threshold={threshold_value}')
+
+            ax.set_xlabel('Time t', fontsize=10)
+            ax.set_ylabel('Success Probability', fontsize=10)
+            ax.set_title(f'{search_type.capitalize()} search (M={M}) on the {graph_type} graph (N={N_val})',
+                        fontsize=11, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+            ax.legend(fontsize=9)
+            ax.set_ylim([0, 1.05])
+
+        # Hide unused subplots in this row
+        for col_idx in range(len(row_results), n_cols):
+            axes[row_idx, col_idx].axis('off')
 
     plt.tight_layout()
 

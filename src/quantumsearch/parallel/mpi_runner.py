@@ -233,8 +233,7 @@ def save_results(results, output_dir='results/data'):
                     {
                         'rounds': int(est['rounds']),
                         'precision': float(est['precision']),
-                        'confidence': float(est['confidence']),
-                        'max_probability': float(np.max(est['probabilities']))
+                        'confidence': float(est['confidence'])
                     }
                     for est in r['estimated_success_probabilities']
                 ] if r['estimated_success_probabilities'] else []
