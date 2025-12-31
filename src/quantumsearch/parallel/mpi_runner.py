@@ -114,7 +114,8 @@ def run_parallel_simulations(task_configs):
                 number_of_rounds=est_config['number_of_rounds'],
                 threshold=est_config['threshold'],
                 precision=est_config['precision'],
-                confidence=est_config['confidence']
+                confidence=est_config['confidence'],
+                fast_mode=est_config.get('fast_mode', False)
             )
 
         # - Extract and store relevant results
@@ -202,10 +203,14 @@ def save_results(results, output_dir='results/data'):
                 save_data[f'rounds_{j}'] = est_result['rounds']
                 save_data[f'precision_{j}'] = est_result['precision']
                 save_data[f'confidence_{j}'] = est_result['confidence']
-                save_data[f'probabilities_{j}'] = est_result['probabilities']
                 save_data[f'threshold_{j}'] = est_result['threshold']
                 save_data[f'lower_running_time_{j}'] = est_result['lower_running_time']
                 save_data[f'upper_running_time_{j}'] = est_result['upper_running_time']
+                # Save probabilities or estimated_locations depending on mode
+                if 'probabilities' in est_result:
+                    save_data[f'probabilities_{j}'] = est_result['probabilities']
+                if 'estimated_locations' in est_result:
+                    save_data[f'estimated_locations_{j}'] = est_result['estimated_locations']
 
         # Save to .npz file
         np.savez(filepath, **save_data)
@@ -233,7 +238,10 @@ def save_results(results, output_dir='results/data'):
                     {
                         'rounds': int(est['rounds']),
                         'precision': float(est['precision']),
-                        'confidence': float(est['confidence'])
+                        'confidence': float(est['confidence']),
+                        'lower_running_time': float(est['lower_running_time']) if 'lower_running_time' in est else None,
+                        'upper_running_time': float(est['upper_running_time']) if 'upper_running_time' in est else None,
+                        'threshold': float(est['threshold']) if 'threshold' in est else None
                     }
                     for est in r['estimated_success_probabilities']
                 ] if r['estimated_success_probabilities'] else []
@@ -340,13 +348,18 @@ def load_results(input_dir='results/data', timestamp=None):
 
         # Extract estimated success probabilities
         i = 0
-        while f'probabilities_{i}' in data.keys():
+        while f'rounds_{i}' in data.keys():
             est_result = {
                 'rounds': int(data[f'rounds_{i}']),
                 'precision': float(data[f'precision_{i}']),
-                'confidence': float(data[f'confidence_{i}']),
-                'probabilities': data[f'probabilities_{i}']
+                'confidence': float(data[f'confidence_{i}'])
             }
+
+            # Load probabilities or estimated_locations depending on what's available
+            if f'probabilities_{i}' in data.keys():
+                est_result['probabilities'] = data[f'probabilities_{i}']
+            if f'estimated_locations_{i}' in data.keys():
+                est_result['estimated_locations'] = data[f'estimated_locations_{i}']
 
             # Load running time bounds if available
             if f'lower_running_time_{i}' in data.keys():

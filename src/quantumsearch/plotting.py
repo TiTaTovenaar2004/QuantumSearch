@@ -242,13 +242,22 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
                 threshold_value = None
 
                 for est_idx, est in enumerate(result['estimated_success_probabilities']):
-                    probs = est['probabilities']
                     rounds = est['rounds']
                     precision = est['precision']
 
-                    # Plot main line
-                    label = f"R={rounds}"
-                    line, = ax.plot(times, probs, '-', linewidth=2, label=label, color=colors[est_idx])
+                    # Check if we have probabilities (slow mode) or estimated_locations (fast mode)
+                    if 'probabilities' in est:
+                        # Slow mode: plot the probability curve
+                        probs = est['probabilities']
+                        
+                        # Plot main line
+                        label = f"R={rounds}"
+                        line, = ax.plot(times, probs, '-', linewidth=2, label=label, color=colors[est_idx])
+                    elif 'estimated_locations' in est:
+                        # Fast mode: just show the label, no probability curve
+                        label = f"R={rounds} (fast mode)"
+                        # Create an empty plot just for the label
+                        ax.plot([], [], '-', linewidth=2, label=label, color=colors[est_idx])
 
                     # Store threshold and add vertical line for average running time
                     if 'threshold' in est and 'lower_running_time' in est:

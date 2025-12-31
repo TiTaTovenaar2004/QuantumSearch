@@ -31,7 +31,7 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(8, 10):
+    for N in range(3, 6):
         for M in range(2, N):
             config = {
                 'graph_config': {
@@ -49,7 +49,8 @@ def main():
                     'number_of_rounds': [1, 2, 3, 4, 5],
                     'threshold': 0.8,
                     'precision': 0.01,
-                    'confidence': 0.99
+                    'confidence': 0.99,
+                    'fast_mode': True
                 }
             }
             task_configs.append(config)
@@ -81,13 +82,15 @@ def main():
             if result['estimated_success_probabilities']:
                 print(f"  Estimated success probabilities for {len(result['estimated_success_probabilities'])} different rounds:")
                 for est_result in result['estimated_success_probabilities']:
-                    max_prob = np.max(est_result['probabilities'])
-                    print(f"    Rounds={est_result['rounds']}: Max prob={max_prob:.4f}, "
+                    mode = 'fast' if 'estimated_locations' in est_result else 'slow'
+                    print(f"    Rounds={est_result['rounds']} ({mode} mode): "
                           f"Precision={est_result['precision']}, "
                           f"Confidence={est_result['confidence']}")
                     if 'lower_running_time' in est_result and not np.isinf(est_result['lower_running_time']):
                         print(f"      Running time: [{est_result['lower_running_time']:.4f}, "
                               f"{est_result['upper_running_time']:.4f}]")
+                    elif 'lower_running_time' in est_result:
+                        print(f"      Threshold never reached")
 
         print()
         print("=" * 60)

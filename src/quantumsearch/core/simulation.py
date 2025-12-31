@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from qutip import *
 import time
@@ -128,11 +129,11 @@ class Simulation:
         return maxima + minima
 
     # --- Action that estimates success probabilities via sampling ---
-    def estimate_success_probabilities(self, number_of_rounds, threshold, precision=0.01, confidence=0.999):
+    def estimate_success_probabilities(self, number_of_rounds, threshold, precision=0.01, confidence=0.999, fast_mode=False):
         start_time = time.time()
 
         if len(self.states) == 0:
-            raise ValueError("States are required to estimate success probabilities.")
+                raise ValueError("States are required to estimate success probabilities.")
 
         # Convert to list if single integer is provided
         if isinstance(number_of_rounds, int):
@@ -140,79 +141,162 @@ class Simulation:
         else:
             rounds_list = number_of_rounds
 
-        num_samples = number_of_samples(precision, confidence)
+        max_num_samples = number_of_samples(precision, confidence)
 
-        # Process each number of rounds
-        for rounds in rounds_list:
-            estimated_probs = []
+        if not fast_mode:
+            # --- Slow mode ---
+            # Process each number of rounds
+            for rounds in rounds_list:
+                estimated_probs = []
 
-            for state in self.states:
-                # Measure the state 'num_samples' times
-                data = state.full().flatten()
-                probs = np.abs(data)**2
+                for state in self.states:
+                    # Measure the state 'num_samples' times
+                    data = state.full().flatten()
+                    probs = np.abs(data)**2
 
-                # Sample according to the probabilities
-                dims = tuple([self.dim_per_site] * self.graph.N)
-                indices = np.random.choice(len(probs), size=num_samples*rounds, p=probs)
+                    # Sample according to the probabilities
+                    dims = tuple([self.dim_per_site] * self.graph.N)
+                    indices = np.random.choice(len(probs), size=max_num_samples*rounds, p=probs)
 
-                # Convert indices to configurations
-                configs = np.array([np.unravel_index(idx, dims) for idx in indices])
-                configs = configs.reshape((num_samples, rounds, self.graph.N))
+                    # Convert indices to configurations
+                    configs = np.array([np.unravel_index(idx, dims) for idx in indices])
+                    configs = configs.reshape((max_num_samples, rounds, self.graph.N))
 
-                # Apply a majority vote over each sample
-                total_particles_per_vertex = configs.sum(axis=1)  # (num_samples, N)
+                    # Apply a majority vote over each sample
+                    total_particles_per_vertex = configs.sum(axis=1)  # (num_samples, N)
 
-                marked_counts = total_particles_per_vertex[:, self.graph.marked_vertex]
-                max_other_counts = np.array([np.max(np.delete(sample, self.graph.marked_vertex)) for sample in total_particles_per_vertex])
+                    marked_counts = total_particles_per_vertex[:, self.graph.marked_vertex]
+                    max_other_counts = np.array([np.max(np.delete(sample, self.graph.marked_vertex)) for sample in total_particles_per_vertex])
 
-                success_count = np.sum(marked_counts > max_other_counts)
+                    success_count = np.sum(marked_counts > max_other_counts)
 
-                # Estimate success probability
-                estimated_prob = success_count / num_samples
-                estimated_probs.append(estimated_prob)
+                    # Estimate success probability
+                    estimated_prob = success_count / max_num_samples
+                    estimated_probs.append(estimated_prob)
 
-            # Store results as a dictionary
-            result = {
-                'rounds': rounds,
-                'precision': precision,
-                'confidence': confidence,
-                'probabilities': np.array(estimated_probs)
-            }
-            
-            # Calculate lower and upper bounds for running time
-            # Lower bound: optimistic case (estimated + precision)
-            # Upper bound: pessimistic case (estimated - precision)
-            probs_array = np.array(estimated_probs)
-            
-            # Lower bound: first time where (estimated + precision) >= threshold
-            optimistic_probs = probs_array + precision
-            above_threshold_optimistic = optimistic_probs >= threshold
-            
-            if np.any(above_threshold_optimistic):
-                first_idx_optimistic = np.argmax(above_threshold_optimistic)
-                lower_running_time = self.times[first_idx_optimistic] * rounds
-            else:
-                lower_running_time = np.inf
-            
-            # Upper bound: first time where (estimated - precision) >= threshold
-            pessimistic_probs = probs_array - precision
-            above_threshold_pessimistic = pessimistic_probs >= threshold
-            
-            if np.any(above_threshold_pessimistic):
-                first_idx_pessimistic = np.argmax(above_threshold_pessimistic)
-                upper_running_time = self.times[first_idx_pessimistic] * rounds
-            else:
-                upper_running_time = np.inf
-            
-            result['lower_running_time'] = lower_running_time
-            result['upper_running_time'] = upper_running_time
-            result['threshold'] = threshold
+                # Store results as a dictionary
+                result = {
+                    'rounds': rounds,
+                    'precision': precision,
+                    'confidence': confidence,
+                    'probabilities': np.array(estimated_probs)
+                }
 
-            # Append to list
-            if not hasattr(self, 'estimated_success_probabilities') or len(self.estimated_success_probabilities) == 0:
-                self.estimated_success_probabilities = [result]
-            else:
-                self.estimated_success_probabilities.append(result)
+                # Calculate lower and upper bounds for running time
+                # Lower bound: optimistic case (estimated + precision)
+                # Upper bound: pessimistic case (estimated - precision)
+                probs_array = np.array(estimated_probs)
+
+                # Lower bound: first time where (estimated + precision) >= threshold
+                optimistic_probs = probs_array + precision
+                above_threshold_optimistic = optimistic_probs >= threshold
+
+                if np.any(above_threshold_optimistic):
+                    first_idx_optimistic = np.argmax(above_threshold_optimistic)
+                    lower_running_time = self.times[first_idx_optimistic] * rounds
+                else:
+                    lower_running_time = np.inf
+
+                # Upper bound: first time where (estimated - precision) >= threshold
+                pessimistic_probs = probs_array - precision
+                above_threshold_pessimistic = pessimistic_probs >= threshold
+
+                if np.any(above_threshold_pessimistic):
+                    first_idx_pessimistic = np.argmax(above_threshold_pessimistic)
+                    upper_running_time = self.times[first_idx_pessimistic] * rounds
+                else:
+                    upper_running_time = np.inf
+
+                result['lower_running_time'] = lower_running_time
+                result['upper_running_time'] = upper_running_time
+                result['threshold'] = threshold
+
+                # Append to list
+                if not hasattr(self, 'estimated_success_probabilities') or len(self.estimated_success_probabilities) == 0:
+                    self.estimated_success_probabilities = [result]
+                else:
+                    self.estimated_success_probabilities.append(result)
+        else:
+            # --- Fast mode ---
+            num_samples_list = np.linspace(1, max_num_samples, 6, endpoint=True)[1:].astype(int)
+
+            for rounds in rounds_list:
+                estimated_locations = []
+
+                for state in self.states:
+                    # Measure the state 'num_samples' times
+                    data = state.full().flatten()
+                    probs = np.abs(data)**2
+                    dims = tuple([self.dim_per_site] * self.graph.N)
+
+                    estimated_location = 0 # 0: unknown, -1: below threshold, 1: above threshold
+                    for num_samples in num_samples_list:
+                        # --- Estimate success probability with current number of samples ---
+                        # Sample according to the probabilities
+                        indices = np.random.choice(len(probs), size=num_samples*rounds, p=probs)
+
+                        # Convert indices to configurations
+                        configs = np.array([np.unravel_index(idx, dims) for idx in indices])
+                        configs = configs.reshape((num_samples, rounds, self.graph.N))
+
+                        # Apply a majority vote over each sample
+                        total_particles_per_vertex = configs.sum(axis=1)  # (num_samples, N)
+
+                        marked_counts = total_particles_per_vertex[:, self.graph.marked_vertex]
+                        max_other_counts = np.array([np.max(np.delete(sample, self.graph.marked_vertex)) for sample in total_particles_per_vertex])
+
+                        success_count = np.sum(marked_counts > max_other_counts)
+
+                        # Estimate success probability
+                        estimated_prob = success_count / num_samples
+
+                        # --- Calculate confidence interval and check whether the threshold lies within it ---
+                        t = math.sqrt((math.log((1 - confidence) / 2)) / (-2 * num_samples))
+                        if estimated_prob + t < threshold:
+                            estimated_location = -1 # below threshold
+                            break
+                        elif estimated_prob - t > threshold:
+                            estimated_location = 1 # above threshold
+                            break
+                        # If confidence interval contains threshold, continue to next num_samples
+
+                    estimated_locations.append(estimated_location)
+
+                # Calculate lower and upper running times based on estimated_locations
+                estimated_locations = np.array(estimated_locations)
+
+                above_indices = np.where(estimated_locations == 1)[0]
+                on_or_above_indices = np.where((estimated_locations == 0) | (estimated_locations == 1))[0]
+                if len(above_indices) > 0:
+                    first_above_idx = above_indices[0]
+                    upper_running_time = self.times[first_above_idx] * rounds
+                else:
+                    upper_running_time = np.inf
+
+                if len(on_or_above_indices) > 0:
+                    first_on_or_above_idx = on_or_above_indices[0]
+                    if first_on_or_above_idx == 0:
+                        lower_running_time = self.times[0] * rounds
+                    else:
+                        lower_running_time = self.times[first_on_or_above_idx - 1] * rounds
+                else:
+                    lower_running_time = np.inf
+
+                # Store results as a dictionary
+                result = {
+                    'rounds': rounds,
+                    'precision': precision,
+                    'confidence': confidence,
+                    'lower_running_time': lower_running_time,
+                    'upper_running_time': upper_running_time,
+                    'threshold': threshold
+                }
+
+                # Append to list
+                if not hasattr(self, 'estimated_success_probabilities') or len(self.estimated_success_probabilities) == 0:
+                    self.estimated_success_probabilities = [result]
+                else:
+                    self.estimated_success_probabilities.append(result)
 
         end_time = time.time()
         self.estimation_time += end_time - start_time

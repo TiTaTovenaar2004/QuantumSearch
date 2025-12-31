@@ -41,7 +41,8 @@ def display_summary(results, summary):
 
         if result['estimated_success_probabilities']:
             for i, est in enumerate(result['estimated_success_probabilities']):
-                print(f"  Estimation {i+1}:")
+                mode = 'fast' if 'estimated_locations' in est else 'slow'
+                print(f"  Estimation {i+1} ({mode} mode):")
                 print(f"    Rounds: {est['rounds']}, Precision: {est['precision']}, Confidence: {est['confidence']}")
 
                 # Display running time bounds if available
