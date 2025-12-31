@@ -13,6 +13,7 @@ Example:
     mpirun -n 8 /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_fermionic_scaling.py
 """
 
+import math
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -31,8 +32,8 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(3, 6):
-        for M in range(2, N):
+    for N in range(4, 19):
+        for M in range(2, 4):
             config = {
                 'graph_config': {
                     'graph_type': 'complete',
