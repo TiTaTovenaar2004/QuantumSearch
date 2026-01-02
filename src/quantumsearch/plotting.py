@@ -249,7 +249,7 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
                     if 'probabilities' in est:
                         # Slow mode: plot the probability curve
                         probs = est['probabilities']
-                        
+
                         # Plot main line
                         label = f"R={rounds}"
                         line, = ax.plot(times, probs, '-', linewidth=2, label=label, color=colors[est_idx])
@@ -276,15 +276,15 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
 
                 # Add threshold line last (so it appears at bottom of legend)
                 if threshold_value is not None:
-                    ax.axhline(threshold_value, color='gray', linestyle=':',
-                             alpha=0.5, linewidth=1, label=f'Threshold={threshold_value}')
+                    ax.axhline(threshold_value, color='gray', linestyle='--',
+                             alpha=0.7, linewidth=1.5, label=f'Threshold={threshold_value}')
 
             ax.set_xlabel('Time t', fontsize=10)
             ax.set_ylabel('Success Probability', fontsize=10)
             ax.set_title(f'{search_type.capitalize()} search (M={M}) on the {graph_type} graph (N={N_val})',
                         fontsize=11, fontweight='bold')
             ax.grid(True, alpha=0.3)
-            ax.legend(fontsize=9)
+            ax.legend(fontsize=9, loc='upper right')
             ax.set_ylim([0, 1.05])
 
         # Hide unused subplots in this row

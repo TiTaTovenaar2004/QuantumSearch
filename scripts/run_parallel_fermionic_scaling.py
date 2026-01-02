@@ -10,7 +10,7 @@ Usage:
     mpirun -n <num_processes> /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_fermionic_scaling.py
 
 Example:
-    mpirun -n 8 /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_fermionic_scaling.py
+    mpirun -n 2 /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_fermionic_scaling.py
 """
 
 import math
@@ -32,7 +32,7 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(4, 19):
+    for N in range(18, 19):
         for M in range(2, 4):
             config = {
                 'graph_config': {
@@ -47,10 +47,10 @@ def main():
                 },
                 'times': times,
                 'estimation_config': {
-                    'number_of_rounds': [1, 2, 3, 4, 5],
+                    'number_of_rounds': [1, 2, 3, 4, 5, 6, 7],
                     'threshold': 0.8,
                     'precision': 0.01,
-                    'confidence': 0.99,
+                    'confidence': 0.9999,
                     'fast_mode': True
                 }
             }
