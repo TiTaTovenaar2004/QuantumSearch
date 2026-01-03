@@ -32,13 +32,39 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(8, 9):
-        for M in range(2, 8):
+    for N in range(5, 6):
+        for M in [2, 2, 2]:
             config = {
                 'graph_config': {
-                    'graph_type': 'complete',
+                    'graph_type': 'erdos-renyi',
                     'N': N,
-                    'marked_vertex': 0
+                    'marked_vertex': 0,
+                    'p': 0.3
+                },
+                'simulation_config': {
+                    'search_type': 'bosonic',
+                    'M': M,
+                    'hopping_rate': None
+                },
+                'times': times,
+                'estimation_config': {
+                    'number_of_rounds': [1, 2, 3, 4, 5, 6],
+                    'threshold': 0.8,
+                    'precision': 0.01,
+                    'confidence': 0.9999,
+                    'fast_mode': False
+                }
+            }
+            task_configs.append(config)
+
+    for N in range(5, 6):
+        for M in [2, 2, 2]:
+            config = {
+                'graph_config': {
+                    'graph_type': 'erdos-renyi',
+                    'N': N,
+                    'marked_vertex': 0,
+                    'p': 0.3
                 },
                 'simulation_config': {
                     'search_type': 'fermionic',
@@ -47,11 +73,111 @@ def main():
                 },
                 'times': times,
                 'estimation_config': {
-                    'number_of_rounds': [1, 2, 3, 4, 5],
+                    'number_of_rounds': [1, 2, 3, 4, 5, 6],
                     'threshold': 0.8,
                     'precision': 0.01,
                     'confidence': 0.9999,
-                    'fast_mode': True
+                    'fast_mode': False
+                }
+            }
+            task_configs.append(config)
+
+    for N in range(5, 6):
+        for M in [2, 2, 2]:
+            config = {
+                'graph_config': {
+                    'graph_type': 'erdos-renyi',
+                    'N': N,
+                    'marked_vertex': 0,
+                    'p': 0.6
+                },
+                'simulation_config': {
+                    'search_type': 'bosonic',
+                    'M': M,
+                    'hopping_rate': None
+                },
+                'times': times,
+                'estimation_config': {
+                    'number_of_rounds': [1, 2, 3, 4, 5, 6],
+                    'threshold': 0.8,
+                    'precision': 0.01,
+                    'confidence': 0.9999,
+                    'fast_mode': False
+                }
+            }
+            task_configs.append(config)
+
+    for N in range(5, 6):
+        for M in [2, 2, 2]:
+            config = {
+                'graph_config': {
+                    'graph_type': 'erdos-renyi',
+                    'N': N,
+                    'marked_vertex': 0,
+                    'p': 0.6
+                },
+                'simulation_config': {
+                    'search_type': 'fermionic',
+                    'M': M,
+                    'hopping_rate': None
+                },
+                'times': times,
+                'estimation_config': {
+                    'number_of_rounds': [1, 2, 3, 4, 5, 6],
+                    'threshold': 0.8,
+                    'precision': 0.01,
+                    'confidence': 0.9999,
+                    'fast_mode': False
+                }
+            }
+            task_configs.append(config)
+
+    for N in range(5, 6):
+        for M in [2, 2, 2]:
+            config = {
+                'graph_config': {
+                    'graph_type': 'erdos-renyi',
+                    'N': N,
+                    'marked_vertex': 0,
+                    'p': 0.9
+                },
+                'simulation_config': {
+                    'search_type': 'bosonic',
+                    'M': M,
+                    'hopping_rate': None
+                },
+                'times': times,
+                'estimation_config': {
+                    'number_of_rounds': [1, 2, 3, 4, 5, 6],
+                    'threshold': 0.8,
+                    'precision': 0.01,
+                    'confidence': 0.9999,
+                    'fast_mode': False
+                }
+            }
+            task_configs.append(config)
+
+    for N in range(5, 6):
+        for M in [2, 2, 2]:
+            config = {
+                'graph_config': {
+                    'graph_type': 'erdos-renyi',
+                    'N': N,
+                    'marked_vertex': 0,
+                    'p': 0.9
+                },
+                'simulation_config': {
+                    'search_type': 'fermionic',
+                    'M': M,
+                    'hopping_rate': None
+                },
+                'times': times,
+                'estimation_config': {
+                    'number_of_rounds': [1, 2, 3, 4, 5, 6],
+                    'threshold': 0.8,
+                    'precision': 0.01,
+                    'confidence': 0.9999,
+                    'fast_mode': False
                 }
             }
             task_configs.append(config)
@@ -105,8 +231,11 @@ def main():
         print(f"Total time: {total_sim_time + total_est_time:.2f} s")
         print("=" * 60)
 
-        # Save results to disk
-        save_results(results, output_dir='results/data')
+        # Save results to disk (use absolute path relative to script location)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.join(script_dir, '..')
+        output_dir = os.path.join(project_root, 'results', 'data')
+        save_results(results, output_dir=output_dir)
 
 
 if __name__ == '__main__':

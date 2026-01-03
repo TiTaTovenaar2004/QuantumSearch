@@ -24,6 +24,8 @@ class Graph:
             self.graph = nx.path_graph(N)
         elif graph_type == 'erdos-renyi':
             self.graph = nx.erdos_renyi_graph(N, p)
+            while not nx.is_connected(self.graph):
+                self.graph = nx.erdos_renyi_graph(N, p)
         elif graph_type == 'barabasi-albert':
             self.graph = nx.barabasi_albert_graph(N, m)
         else:

@@ -196,27 +196,50 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # Group results by N, then sort by M within each N
+    # Sort results by: search_type (bosonic first), graph_type, N, p, then M
+    def sort_key(result):
+        # search_type: bosonic=0, fermionic=1 (so bosonic comes first)
+        search_order = 0 if result['search_type'] == 'bosonic' else 1
+        # Get p value from task_config if it exists, otherwise use 0 (for non-Erdos-Renyi graphs)
+        p_value = 0
+        if 'task_config' in result and 'graph_config' in result['task_config']:
+            p_value = result['task_config']['graph_config'].get('p', 0)
+        return (search_order, result['graph_type'], result['N'], p_value, result['M'])
+
+    sorted_results = sorted(results, key=sort_key)
+
+    # Group results by search_type, graph_type, N, and p for row organization
     from collections import defaultdict
-    results_by_N = defaultdict(list)
-    for result in results:
-        results_by_N[result['N']].append(result)
+    results_by_group = defaultdict(list)
+    for result in sorted_results:
+        # Get p value
+        p_value = 0
+        if 'task_config' in result and 'graph_config' in result['task_config']:
+            p_value = result['task_config']['graph_config'].get('p', 0)
+        # Group by (search_type, graph_type, N, p)
+        group_key = (result['search_type'], result['graph_type'], result['N'], p_value)
+        results_by_group[group_key].append(result)
 
-    # Sort each group by M
-    for N in results_by_N:
-        results_by_N[N].sort(key=lambda r: r['M'])
-
-    # Sort N values
-    N_values = sorted(results_by_N.keys())
+    # Get ordered groups (already sorted by our sort_key)
+    ordered_groups = []
+    seen_groups = set()
+    for result in sorted_results:
+        p_value = 0
+        if 'task_config' in result and 'graph_config' in result['task_config']:
+            p_value = result['task_config']['graph_config'].get('p', 0)
+        group_key = (result['search_type'], result['graph_type'], result['N'], p_value)
+        if group_key not in seen_groups:
+            ordered_groups.append(group_key)
+            seen_groups.add(group_key)
 
     # Split results into rows with max 3 columns
-    # Each N can span multiple rows if it has more than 3 M values
+    # Each group (search_type, graph_type, N) can span multiple rows if it has more than 3 M values
     plot_rows = []
-    for N in N_values:
-        results_for_N = results_by_N[N]
+    for group_key in ordered_groups:
+        results_for_group = results_by_group[group_key]
         # Chunk into groups of 3
-        for i in range(0, len(results_for_N), 3):
-            plot_rows.append(results_for_N[i:i+3])
+        for i in range(0, len(results_for_group), 3):
+            plot_rows.append(results_for_group[i:i+3])
 
     # Determine grid dimensions
     n_rows = len(plot_rows)
@@ -327,8 +350,18 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
 
             ax.set_xlabel('Time t', fontsize=10)
             ax.set_ylabel('Success Probability', fontsize=10)
-            ax.set_title(f'{search_type.capitalize()} search (M={M}) on the {graph_type} graph (N={N_val})',
-                        fontsize=11, fontweight='bold')
+
+            # Extract p parameter if available
+            p = None
+            if 'task_config' in result and 'graph_config' in result['task_config']:
+                p = result['task_config']['graph_config'].get('p')
+
+            if p is not None and p > 0:
+                title = f'{search_type.capitalize()} search (M={M}) on the {graph_type} graph (N={N_val}, p={p})'
+            else:
+                title = f'{search_type.capitalize()} search (M={M}) on the {graph_type} graph (N={N_val})'
+
+            ax.set_title(title, fontsize=11, fontweight='bold')
             ax.grid(True, alpha=0.3)
             ax.legend(fontsize=9, loc='upper right')
             ax.set_ylim([0, 1.05])

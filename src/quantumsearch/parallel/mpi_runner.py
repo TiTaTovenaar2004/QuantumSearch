@@ -203,6 +203,22 @@ def save_results(results, output_dir='results/data'):
             'estimation_time': result['estimation_time'],
         }
 
+        # Save task_config as JSON string if present
+        if 'task_config' in result:
+            # Convert numpy arrays to lists for JSON serialization
+            task_config_serializable = {}
+            for key, value in result['task_config'].items():
+                if isinstance(value, dict):
+                    task_config_serializable[key] = {
+                        k: v.tolist() if isinstance(v, np.ndarray) else v
+                        for k, v in value.items()
+                    }
+                elif isinstance(value, np.ndarray):
+                    task_config_serializable[key] = value.tolist()
+                else:
+                    task_config_serializable[key] = value
+            save_data['task_config_json'] = json.dumps(task_config_serializable)
+
         # Add running times and success probabilities as arrays
         if 'lower_running_times' in result:
             save_data['lower_running_times'] = result['lower_running_times']
@@ -230,6 +246,7 @@ def save_results(results, output_dir='results/data'):
                 'search_type': r['search_type'],
                 'M': r['M'],
                 'hopping_rate': float(r['hopping_rate']),
+                'p': r.get('task_config', {}).get('graph_config', {}).get('p') if 'task_config' in r else None,
                 'simulation_time': float(r['simulation_time']),
                 'estimation_time': float(r['estimation_time']),
                 'num_time_points': len(r['times']),
@@ -310,6 +327,7 @@ def load_results(input_dir='results/data', timestamp=None):
         N = task_info['N']
         search_type = task_info['search_type']
         M = task_info['M']
+        p = task_info.get('p')  # Get p parameter from summary if available
 
         # Construct filename
         filename = f"task_{task_id}_{graph_type}_N{N}_{search_type}_M{M}_{timestamp}.npz"
@@ -334,6 +352,19 @@ def load_results(input_dir='results/data', timestamp=None):
             'simulation_time': float(data['simulation_time']),
             'estimation_time': float(data['estimation_time'])
         }
+
+        # Load task_config if present in npz file
+        if 'task_config_json' in data.keys():
+            result['task_config'] = json.loads(str(data['task_config_json']))
+        # Otherwise reconstruct minimal task_config from available data
+        elif p is not None:
+            result['task_config'] = {
+                'graph_config': {
+                    'graph_type': graph_type,
+                    'N': N,
+                    'p': p
+                }
+            }
 
         # Load running times and success probabilities as arrays
         if 'lower_running_times' in data.keys():
