@@ -1,56 +1,7 @@
 # QuantumSearch
 Simulation of multi-boson and multi-fermion quantum search over arbitrary graphs containing a marked vertex. Performance analysis of each search algorithm (boson versus fermion).
 
-# Plan DelftBlue
-Assuming optimal hopping rate can be determined.
-
-## Run 1
-- Simulate fermionic search for different N, M, T and R (determine running times and plot success probabilities), in order to find how large an N, M and R the computer can handle, how large T has to be in order for the simulation to contain multiple peaks in success probability, and how the running time changes for these larger graphs as R grows (Is the running time infty for threshold>0.8? Then it is not insightful to set the threshold in our final simulation to > 0.8. Does the running time increase monotonically with R? This influences which stop_condition is best).
-
-## Run 2
-- Plan: Use the best T, threshold(s) and stop condition found in Run 1. Simulate fermionic search on a complete graph for all N = 1, 2, ..., as large as possible, optimize the lowest running time over M for each N.
-- Output: For each N, the running time of the fermionic search on the complete graph (minimized over M). Compare with Karthigeyan2025 (N^1/3 ?)
-- Output: For some values of N, a plot of the lowest running time as a function of M. Make a plot of the optimal M as a function of N. Compare with Karthigeyan2025 (M goes as sqrt(N)?)
-
-## Run 3
-- Plan: Use same T, threshold(s) and stop condition. Simulate fermionic and bosonic search on a lot of erdos-renyi graphs (for different p's) and for each graph optimize the lowest running times over M (fermionic and bosonic separately of course).
-- Output: Plot the optimal lowest running times for both the fermionic and the bosonic search as a function of p. Does the fermionic search have an advantage for low p?
-
-# Parallel algorithm sketch
-num_time_steps = 1000
-sim.simulate([0, 1, ..., 99])
-sim.calculate_w_occupations([0, 1, ..., 99])
-number_of_extrema = sim.number_of_extrema()
-
-while number_of_extrema = 0:
-  T_1 = sim.times[-1] + 1
-  T_2 = 2*T_1
-  times = np.arange(T_1, T_2, 100)
-  sim.simulate(times)
-  sim.calculate_w_occupations(times)
-  number_of_extrema = sim.number_of_extrema()
-
-while number_of_extrema > 40:
-  T = sim.times[-1]
-  T = T / 2
-  times = np.linspace(0, T, 100)
-  sim.simulate(times)
-  sim.calculate_w_occupations(times)
-  number_of_extrema = sim.number_of_extrema()
-
-number_of_extrema = sim.number_of_extrema()
-
-sim.states = np.array([])
-sim.times = np.array([])
-sim.w_occupations = np.array([])
-sim.occupation_times = np.array([])
-
-if number_of_extrema >= 20:
-  times = np.linspace(0, T, num_time_steps)
-  sim.simulate(times)
-else:
-  T = sim.times[-1] + 1
-  T_new = T / (number_of_extrema / 30)
-  times = np.linspace(0, T_new, num_time_steps)
-  sim.simulate(times)
-
+# Specs
+## Sparta
+- Fermionic: N=20, number_of_time_steps = 100. --> memory overload
+- Bosonic: N=7, M=5, number_of_time_steps = 100. --> memory overload

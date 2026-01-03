@@ -7,10 +7,10 @@ using MPI. Each task runs a simulation, estimates success probabilities, and
 stores the results.
 
 Usage:
-    mpirun -n <num_processes> /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_fermionic_scaling.py
+    mpirun -n <num_processes> /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_simulations.py
 
 Example:
-    mpirun -n 2 /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_fermionic_scaling.py
+    mpirun -n 2 /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_simulations.py
 """
 
 import math
@@ -32,8 +32,8 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(18, 19):
-        for M in range(2, 4):
+    for N in range(7, 8):
+        for M in range(2, N):
             config = {
                 'graph_config': {
                     'graph_type': 'complete',
@@ -41,7 +41,7 @@ def main():
                     'marked_vertex': 0
                 },
                 'simulation_config': {
-                    'search_type': 'fermionic',
+                    'search_type': 'bosonic',
                     'M': M,
                     'hopping_rate': None
                 },

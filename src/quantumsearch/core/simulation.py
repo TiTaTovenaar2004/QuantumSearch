@@ -41,6 +41,161 @@ class Simulation:
         else:
             self.hopping_rate = hopping_rate
 
+    # --- Simulate and estimate success probabilities memory efficient ---
+    def simulate_estimate(self, times, number_of_rounds, threshold, precision=0.01, confidence=0.999, fast_mode=False):
+        # Convert number_of_rounds to list if single integer is provided
+        if isinstance(number_of_rounds, int):
+            rounds_list = [number_of_rounds]
+        else:
+            rounds_list = number_of_rounds
+        max_num_samples = number_of_samples(precision, confidence)
+
+        success_probabilities = np.empty((len(rounds_list), len(times)))
+        lower_running_times = np.empty(len(rounds_list))
+        upper_running_times = np.empty(len(rounds_list))
+
+        if not fast_mode:
+            # --- Slow mode ---
+            for idt, t in enumerate(times):
+                # --- Simulate for time t ---
+                if self.search_type == 'bosonic':
+                    state = bosonic_search(self.M, self.graph, self.hopping_rate, [t])[0]
+                else:
+                    state = fermionic_search(self.M, self.graph, self.hopping_rate, [t])[0]
+
+                # --- Estimate success probability for state at time t ---
+                # Process each number of rounds
+                for idr, rounds in enumerate(rounds_list):
+                    estimated_probs = []
+
+                    # Measure the state 'num_samples' times
+                    data = state.full().flatten()
+                    probs = np.abs(data)**2
+
+                    # Sample according to the probabilities
+                    dims = tuple([self.dim_per_site] * self.graph.N)
+                    indices = np.random.choice(len(probs), size=max_num_samples*rounds, p=probs)
+
+                    # Convert indices to configurations
+                    configs = np.array([np.unravel_index(idx, dims) for idx in indices])
+                    configs = configs.reshape((max_num_samples, rounds, self.graph.N))
+
+                    # Apply a majority vote over each sample
+                    total_particles_per_vertex = configs.sum(axis=1)  # (num_samples, N)
+
+                    marked_counts = total_particles_per_vertex[:, self.graph.marked_vertex]
+                    max_other_counts = np.array([np.max(np.delete(sample, self.graph.marked_vertex)) for sample in total_particles_per_vertex])
+
+                    success_count = np.sum(marked_counts > max_other_counts)
+
+                    # Estimate success probability
+                    estimated_prob = success_count / max_num_samples
+                    success_probabilities[idr, idt] = estimated_prob
+
+            # --- Calculate lower and upper bounds for running time ---
+            for idr, probs in enumerate(success_probabilities):
+                optimistic_probs = probs + precision
+                pessimistic_probs = probs - precision
+
+                above_threshold_optimistic = optimistic_probs >= threshold
+                above_threshold_pessimistic = pessimistic_probs >= threshold
+
+                if np.any(above_threshold_optimistic):
+                    first_idx_optimistic = np.argmax(above_threshold_optimistic)
+                    if first_idx_optimistic == 0:
+                        lower_running_times[idr] = times[0] * rounds_list[idr]
+                    else:
+                        lower_running_times[idr] = times[first_idx_optimistic - 1] * rounds_list[idr]
+                else:
+                    lower_running_times[idr] = np.inf
+
+                if np.any(above_threshold_pessimistic):
+                    first_idx_pessimistic = np.argmax(above_threshold_pessimistic)
+                    upper_running_times[idr] = times[first_idx_pessimistic] * rounds_list[idr]
+                else:
+                    upper_running_times[idr] = np.inf
+        else:
+            # --- Fast mode ---
+            num_samples_list = np.linspace(1, max_num_samples, 6, endpoint=True)[1:].astype(int)
+
+            for idt, t in enumerate(times):
+                # --- Simulate for time t ---
+                if self.search_type == 'bosonic':
+                    state = bosonic_search(self.M, self.graph, self.hopping_rate, [t])[0]
+                else:
+                    state = fermionic_search(self.M, self.graph, self.hopping_rate, [t])[0]
+
+                # --- Estimate success probability for state at time t ---
+                for idr, rounds in enumerate(rounds_list):
+                    # Measure the state 'num_samples' times
+                    data = state.full().flatten()
+                    probs = np.abs(data)**2
+                    dims = tuple([self.dim_per_site] * self.graph.N)
+
+                    estimated_location = 0 # 0: unknown, -1: below threshold, 1: above threshold
+                    for num_samples in num_samples_list:
+                        # --- Estimate success probability with current number of samples ---
+                        # Sample according to the probabilities
+                        indices = np.random.choice(len(probs), size=num_samples*rounds, p=probs)
+
+                        # Convert indices to configurations
+                        configs = np.array([np.unravel_index(idx, dims) for idx in indices])
+                        configs = configs.reshape((num_samples, rounds, self.graph.N))
+
+                        # Apply a majority vote over each sample
+                        total_particles_per_vertex = configs.sum(axis=1)  # (num_samples, N)
+
+                        marked_counts = total_particles_per_vertex[:, self.graph.marked_vertex]
+                        max_other_counts = np.array([np.max(np.delete(sample, self.graph.marked_vertex)) for sample in total_particles_per_vertex])
+
+                        success_count = np.sum(marked_counts > max_other_counts)
+
+                        # Estimate success probability
+                        estimated_prob = success_count / num_samples
+
+                        # --- Calculate confidence interval and check whether the threshold lies within it ---
+                        t_conf = math.sqrt((math.log((1 - confidence) / 2)) / (-2 * num_samples))
+                        if estimated_prob + t_conf < threshold:
+                            estimated_location = -1 # below threshold
+                            break
+                        elif estimated_prob - t_conf > threshold:
+                            estimated_location = 1 # above threshold
+                            break
+                        # If confidence interval contains threshold, continue to next num_samples
+
+                    success_probabilities[idr, idt] = estimated_location
+
+            # --- Calculate lower and upper running times based on estimated_locations ---
+            for idr, estimated_locations in enumerate(success_probabilities):
+                above_indices = np.where(estimated_locations == 1)[0]
+                on_or_above_indices = np.where((estimated_locations == 0) | (estimated_locations == 1))[0]
+                if len(above_indices) > 0:
+                    first_above_idx = above_indices[0]
+                    upper_running_times[idr] = times[first_above_idx] * rounds
+                else:
+                    upper_running_times[idr] = np.inf
+
+                if len(on_or_above_indices) > 0:
+                    first_on_or_above_idx = on_or_above_indices[0]
+                    if first_on_or_above_idx == 0:
+                        lower_running_times[idr] = times[0] * rounds
+                    else:
+                        lower_running_times[idr] = times[first_on_or_above_idx - 1] * rounds
+                else:
+                    lower_running_times[idr] = np.inf
+
+        result = {
+            'rounds': number_of_rounds,
+            'precision': precision,
+            'confidence': confidence,
+            'success_probabilities': success_probabilities,
+            'lower_running_times': lower_running_times,
+            'upper_running_times': upper_running_times,
+            'threshold': threshold,
+        }
+
+        return result
+
     # --- Action that runs the simulation for some times ---
     def simulate(self, times):
         start_time = time.time()

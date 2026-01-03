@@ -105,18 +105,15 @@ def run_parallel_simulations(task_configs):
 
         # - Run simulation with simulate(times)
         times = task_config['times']
-        simulation.simulate(times)
-
-        # - Calculate/estimate success probabilities
-        if 'estimation_config' in task_config:
-            est_config = task_config['estimation_config']
-            simulation.estimate_success_probabilities(
-                number_of_rounds=est_config['number_of_rounds'],
-                threshold=est_config['threshold'],
-                precision=est_config['precision'],
-                confidence=est_config['confidence'],
-                fast_mode=est_config.get('fast_mode', False)
-            )
+        est_config = task_config['estimation_config']
+        estimation_result = simulation.simulate_estimate(
+            times=times,
+            number_of_rounds=est_config['number_of_rounds'],
+            threshold=est_config['threshold'],
+            precision=est_config['precision'],
+            confidence=est_config['confidence'],
+            fast_mode = est_config['fast_mode']
+        )
 
         # - Extract and store relevant results
         result = {
@@ -127,14 +124,23 @@ def run_parallel_simulations(task_configs):
             'search_type': sim_config['search_type'],
             'M': sim_config['M'],
             'hopping_rate': simulation.hopping_rate,
-            'times': simulation.times,
+            'times': times,
             'simulation_time': simulation.simulation_time,
             'estimation_time': simulation.estimation_time,
-            'estimated_success_probabilities': simulation.estimated_success_probabilities,
+            'estimated_success_probabilities': estimation_result['success_probabilities'],
+            'lower_running_times': estimation_result['lower_running_times'],
+            'upper_running_times': estimation_result['upper_running_times'],
             'status': 'completed'
         }
 
         my_results.append(result)
+
+        # Explicitly delete large objects to free memory
+        del simulation.states  # Delete stored quantum states (largest memory consumer)
+        del simulation
+        del graph
+        import gc
+        gc.collect()  # Force garbage collection
 
     # --- 4. Gather Results to Master ---
     all_results = comm.gather(my_results, root=0)
