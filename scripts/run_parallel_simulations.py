@@ -10,7 +10,7 @@ Usage:
     mpirun -n <num_processes> /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_simulations.py
 
 Example:
-    mpirun -n 2 /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_simulations.py
+    mpirun -n 8 /home/aron/Tijmen/QuantumSearch/.venv/bin/python /home/aron/Tijmen/QuantumSearch/scripts/run_parallel_simulations.py
 """
 
 import math
@@ -32,8 +32,8 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(7, 8):
-        for M in range(2, N):
+    for N in range(8, 9):
+        for M in range(2, 8):
             config = {
                 'graph_config': {
                     'graph_type': 'complete',
@@ -41,13 +41,13 @@ def main():
                     'marked_vertex': 0
                 },
                 'simulation_config': {
-                    'search_type': 'bosonic',
+                    'search_type': 'fermionic',
                     'M': M,
                     'hopping_rate': None
                 },
                 'times': times,
                 'estimation_config': {
-                    'number_of_rounds': [1, 2, 3, 4, 5, 6, 7],
+                    'number_of_rounds': [1, 2, 3, 4, 5],
                     'threshold': 0.8,
                     'precision': 0.01,
                     'confidence': 0.9999,
@@ -80,18 +80,21 @@ def main():
             print(f"  Simulation time: {result['simulation_time']:.2f} s")
             print(f"  Estimation time: {result['estimation_time']:.2f} s")
 
-            if result['estimated_success_probabilities']:
-                print(f"  Estimated success probabilities for {len(result['estimated_success_probabilities'])} different rounds:")
-                for est_result in result['estimated_success_probabilities']:
-                    mode = 'fast' if 'estimated_locations' in est_result else 'slow'
-                    print(f"    Rounds={est_result['rounds']} ({mode} mode): "
-                          f"Precision={est_result['precision']}, "
-                          f"Confidence={est_result['confidence']}")
-                    if 'lower_running_time' in est_result and not np.isinf(est_result['lower_running_time']):
-                        print(f"      Running time: [{est_result['lower_running_time']:.4f}, "
-                              f"{est_result['upper_running_time']:.4f}]")
-                    elif 'lower_running_time' in est_result:
-                        print(f"      Threshold never reached")
+            if 'lower_running_times' in result and 'upper_running_times' in result:
+                # Get number_of_rounds from task config
+                number_of_rounds = result['task_config']['estimation_config']['number_of_rounds']
+                if isinstance(number_of_rounds, int):
+                    number_of_rounds = [number_of_rounds]
+
+                print(f"  Running times for {len(number_of_rounds)} different rounds:")
+                for idx, rounds in enumerate(number_of_rounds):
+                    lower_rt = result['lower_running_times'][idx]
+                    upper_rt = result['upper_running_times'][idx]
+
+                    if not np.isinf(lower_rt) and not np.isinf(upper_rt):
+                        print(f"    Rounds={rounds}: [{lower_rt:.4f}, {upper_rt:.4f}]")
+                    else:
+                        print(f"    Rounds={rounds}: Threshold never reached")
 
         print()
         print("=" * 60)

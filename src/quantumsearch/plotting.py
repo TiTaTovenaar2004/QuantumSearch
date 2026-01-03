@@ -237,47 +237,93 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
             M = result['M']
 
             # Plot each estimation (multiple rounds may be present for same task)
-            if result['estimated_success_probabilities']:
-                colors = plt.cm.viridis(np.linspace(0, 0.9, len(result['estimated_success_probabilities'])))
-                threshold_value = None
+            # Check if we have the new array format or old list format
+            if 'estimated_success_probabilities' in result and result['estimated_success_probabilities'] is not None:
+                # New format: array of success probabilities
+                if isinstance(result['estimated_success_probabilities'], np.ndarray):
+                    success_probs = result['estimated_success_probabilities']
 
-                for est_idx, est in enumerate(result['estimated_success_probabilities']):
-                    rounds = est['rounds']
-                    precision = est['precision']
+                    # Get running times and rounds from new format
+                    if 'lower_running_times' in result and 'upper_running_times' in result:
+                        lower_rts = result['lower_running_times']
+                        upper_rts = result['upper_running_times']
 
-                    # Check if we have probabilities (slow mode) or estimated_locations (fast mode)
-                    if 'probabilities' in est:
-                        # Slow mode: plot the probability curve
-                        probs = est['probabilities']
+                        # Try to get number_of_rounds and threshold from task_config
+                        if 'task_config' in result and 'estimation_config' in result['task_config']:
+                            number_of_rounds = result['task_config']['estimation_config']['number_of_rounds']
+                            threshold_value = result['task_config']['estimation_config']['threshold']
+                            if isinstance(number_of_rounds, int):
+                                number_of_rounds = [number_of_rounds]
+                        else:
+                            # Fallback
+                            number_of_rounds = list(range(1, len(lower_rts) + 1))
+                            threshold_value = None
 
-                        # Plot main line
-                        label = f"R={rounds}"
-                        line, = ax.plot(times, probs, '-', linewidth=2, label=label, color=colors[est_idx])
-                    elif 'estimated_locations' in est:
-                        # Fast mode: just show the label, no probability curve
-                        label = f"R={rounds} (fast mode)"
-                        # Create an empty plot just for the label
-                        ax.plot([], [], '-', linewidth=2, label=label, color=colors[est_idx])
+                        colors = plt.cm.viridis(np.linspace(0, 0.9, len(number_of_rounds)))
 
-                    # Store threshold and add vertical line for average running time
-                    if 'threshold' in est and 'lower_running_time' in est:
-                        if threshold_value is None:
-                            threshold_value = est['threshold']
+                        # Plot success probabilities for each round
+                        for idx, rounds in enumerate(number_of_rounds):
+                            if success_probs.ndim == 2:
+                                probs = success_probs[idx, :]
+                                # Plot probability curve
+                                label = f"R={rounds}"
+                                ax.plot(times, probs, '-', linewidth=2, label=label, color=colors[idx])
 
-                        lower_rt = est['lower_running_time']
-                        upper_rt = est['upper_running_time']
+                            # Add vertical line for running time
+                            lower_rt = lower_rts[idx]
+                            upper_rt = upper_rts[idx]
+                            if not np.isinf(lower_rt):
+                                avg_rt = (lower_rt + upper_rt) / 2
+                                avg_t = avg_rt / rounds
+                                ax.axvline(avg_t, color=colors[idx], linestyle='--',
+                                         alpha=0.4, linewidth=1.5)
 
-                        # Add vertical line at average running time if threshold is reached
-                        if not np.isinf(lower_rt):
-                            avg_rt = (lower_rt + upper_rt) / 2
-                            avg_t = avg_rt / rounds  # Convert back to single-run time
-                            ax.axvline(avg_t, color=colors[est_idx], linestyle='--',
-                                     alpha=0.4, linewidth=1.5)
+                        # Add threshold line
+                        if threshold_value is not None:
+                            ax.axhline(threshold_value, color='gray', linestyle='--',
+                                     alpha=0.7, linewidth=1.5, label=f'Threshold={threshold_value}')
+                else:
+                    # Old format: list of dictionaries
+                    colors = plt.cm.viridis(np.linspace(0, 0.9, len(result['estimated_success_probabilities'])))
+                    threshold_value = None
 
-                # Add threshold line last (so it appears at bottom of legend)
-                if threshold_value is not None:
-                    ax.axhline(threshold_value, color='gray', linestyle='--',
-                             alpha=0.7, linewidth=1.5, label=f'Threshold={threshold_value}')
+                    for est_idx, est in enumerate(result['estimated_success_probabilities']):
+                        rounds = est['rounds']
+                        precision = est['precision']
+
+                        # Check if we have probabilities (slow mode) or estimated_locations (fast mode)
+                        if 'probabilities' in est:
+                            # Slow mode: plot the probability curve
+                            probs = est['probabilities']
+
+                            # Plot main line
+                            label = f"R={rounds}"
+                            line, = ax.plot(times, probs, '-', linewidth=2, label=label, color=colors[est_idx])
+                        elif 'estimated_locations' in est:
+                            # Fast mode: just show the label, no probability curve
+                            label = f"R={rounds} (fast mode)"
+                            # Create an empty plot just for the label
+                            ax.plot([], [], '-', linewidth=2, label=label, color=colors[est_idx])
+
+                        # Store threshold and add vertical line for average running time
+                        if 'threshold' in est and 'lower_running_time' in est:
+                            if threshold_value is None:
+                                threshold_value = est['threshold']
+
+                            lower_rt = est['lower_running_time']
+                            upper_rt = est['upper_running_time']
+
+                            # Add vertical line at average running time if threshold is reached
+                            if not np.isinf(lower_rt):
+                                avg_rt = (lower_rt + upper_rt) / 2
+                                avg_t = avg_rt / rounds  # Convert back to single-run time
+                                ax.axvline(avg_t, color=colors[est_idx], linestyle='--',
+                                         alpha=0.4, linewidth=1.5)
+
+                    # Add threshold line last (so it appears at bottom of legend)
+                    if threshold_value is not None:
+                        ax.axhline(threshold_value, color='gray', linestyle='--',
+                                 alpha=0.7, linewidth=1.5, label=f'Threshold={threshold_value}')
 
             ax.set_xlabel('Time t', fontsize=10)
             ax.set_ylabel('Success Probability', fontsize=10)

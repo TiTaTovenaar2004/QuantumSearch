@@ -22,7 +22,7 @@ def analyze_runtimes(results):
     Returns:
     --------
     runtime_data : dict
-        Dictionary with structure: {N: {M: [(rounds, lower_rt, upper_rt), ...]}}
+        Dictionary with structure: {N: {M: [(rounds_idx, lower_rt, upper_rt), ...]}}
     """
     runtime_data = {}
 
@@ -35,16 +35,19 @@ def analyze_runtimes(results):
         if M not in runtime_data[N]:
             runtime_data[N][M] = []
 
-        # Extract running times for each round
-        if result['estimated_success_probabilities']:
-            for est in result['estimated_success_probabilities']:
-                rounds = est['rounds']
-                lower_rt = est.get('lower_running_time', np.inf)
-                upper_rt = est.get('upper_running_time', np.inf)
-
+        # Extract running times from arrays
+        if 'lower_running_times' in result and 'upper_running_times' in result:
+            lower_rts = result['lower_running_times']
+            upper_rts = result['upper_running_times']
+            
+            # Iterate through each round index
+            for idx in range(len(lower_rts)):
+                lower_rt = lower_rts[idx]
+                upper_rt = upper_rts[idx]
+                
                 # Only include valid running times (not infinite)
                 if not np.isinf(lower_rt) and not np.isinf(upper_rt):
-                    runtime_data[N][M].append((rounds, lower_rt, upper_rt))
+                    runtime_data[N][M].append((idx, lower_rt, upper_rt))
 
     return runtime_data
 

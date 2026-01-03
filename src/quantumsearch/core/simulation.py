@@ -43,6 +43,8 @@ class Simulation:
 
     # --- Simulate and estimate success probabilities memory efficient ---
     def simulate_estimate(self, times, number_of_rounds, threshold, precision=0.01, confidence=0.999, fast_mode=False):
+        start_time = time.time()
+
         # Convert number_of_rounds to list if single integer is provided
         if isinstance(number_of_rounds, int):
             rounds_list = [number_of_rounds]
@@ -59,15 +61,13 @@ class Simulation:
             for idt, t in enumerate(times):
                 # --- Simulate for time t ---
                 if self.search_type == 'bosonic':
-                    state = bosonic_search(self.M, self.graph, self.hopping_rate, [t])[0]
+                    state = bosonic_search(self.M, self.graph, self.hopping_rate, [0, t])[-1]
                 else:
-                    state = fermionic_search(self.M, self.graph, self.hopping_rate, [t])[0]
+                    state = fermionic_search(self.M, self.graph, self.hopping_rate, [0, t])[-1]
 
                 # --- Estimate success probability for state at time t ---
                 # Process each number of rounds
                 for idr, rounds in enumerate(rounds_list):
-                    estimated_probs = []
-
                     # Measure the state 'num_samples' times
                     data = state.full().flatten()
                     probs = np.abs(data)**2
@@ -121,9 +121,9 @@ class Simulation:
             for idt, t in enumerate(times):
                 # --- Simulate for time t ---
                 if self.search_type == 'bosonic':
-                    state = bosonic_search(self.M, self.graph, self.hopping_rate, [t])[0]
+                    state = bosonic_search(self.M, self.graph, self.hopping_rate, [0, t])[-1]
                 else:
-                    state = fermionic_search(self.M, self.graph, self.hopping_rate, [t])[0]
+                    state = fermionic_search(self.M, self.graph, self.hopping_rate, [0, t])[-1]
 
                 # --- Estimate success probability for state at time t ---
                 for idr, rounds in enumerate(rounds_list):
@@ -171,16 +171,16 @@ class Simulation:
                 on_or_above_indices = np.where((estimated_locations == 0) | (estimated_locations == 1))[0]
                 if len(above_indices) > 0:
                     first_above_idx = above_indices[0]
-                    upper_running_times[idr] = times[first_above_idx] * rounds
+                    upper_running_times[idr] = times[first_above_idx] * rounds_list[idr]
                 else:
                     upper_running_times[idr] = np.inf
 
                 if len(on_or_above_indices) > 0:
                     first_on_or_above_idx = on_or_above_indices[0]
                     if first_on_or_above_idx == 0:
-                        lower_running_times[idr] = times[0] * rounds
+                        lower_running_times[idr] = times[0] * rounds_list[idr]
                     else:
-                        lower_running_times[idr] = times[first_on_or_above_idx - 1] * rounds
+                        lower_running_times[idr] = times[first_on_or_above_idx - 1] * rounds_list[idr]
                 else:
                     lower_running_times[idr] = np.inf
 
@@ -193,6 +193,9 @@ class Simulation:
             'upper_running_times': upper_running_times,
             'threshold': threshold,
         }
+
+        end_time = time.time()
+        self.estimation_time = end_time - start_time
 
         return result
 

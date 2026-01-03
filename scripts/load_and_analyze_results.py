@@ -39,22 +39,34 @@ def display_summary(results, summary):
         print(f"  Simulation time: {result['simulation_time']:.4f}s")
         print(f"  Estimation time: {result['estimation_time']:.4f}s")
 
-        if result['estimated_success_probabilities']:
-            for i, est in enumerate(result['estimated_success_probabilities']):
-                mode = 'fast' if 'estimated_locations' in est else 'slow'
-                print(f"  Estimation {i+1} ({mode} mode):")
-                print(f"    Rounds: {est['rounds']}, Precision: {est['precision']}, Confidence: {est['confidence']}")
+        # Display running times from new array format
+        if 'lower_running_times' in result and 'upper_running_times' in result:
+            lower_rts = result['lower_running_times']
+            upper_rts = result['upper_running_times']
 
-                # Display running time bounds if available
-                if 'threshold' in est and 'lower_running_time' in est:
-                    threshold = est['threshold']
-                    lower_rt = est['lower_running_time']
-                    upper_rt = est['upper_running_time']
+            # Get number_of_rounds from task_config if available, otherwise infer from array length
+            if 'task_config' in result and 'estimation_config' in result['task_config']:
+                number_of_rounds = result['task_config']['estimation_config']['number_of_rounds']
+                threshold = result['task_config']['estimation_config']['threshold']
+                if isinstance(number_of_rounds, int):
+                    number_of_rounds = [number_of_rounds]
+            else:
+                # Fallback: create placeholder round numbers
+                number_of_rounds = list(range(1, len(lower_rts) + 1))
+                threshold = None
 
-                    if np.isinf(lower_rt):
-                        print(f"    Threshold {threshold:.3f} never reached")
+            print(f"  Running times:")
+            for idx, rounds in enumerate(number_of_rounds):
+                lower_rt = lower_rts[idx]
+                upper_rt = upper_rts[idx]
+
+                if np.isinf(lower_rt) or np.isinf(upper_rt):
+                    print(f"    Rounds={rounds}: Threshold never reached")
+                else:
+                    if threshold is not None:
+                        print(f"    Rounds={rounds}: [{lower_rt:.6f}, {upper_rt:.6f}] (threshold={threshold:.3f})")
                     else:
-                        print(f"    Threshold {threshold:.3f}: Running time ∈ [{lower_rt:.6f}, {upper_rt:.6f}]")
+                        print(f"    Rounds={rounds}: [{lower_rt:.6f}, {upper_rt:.6f}]")
 
 
 def main():

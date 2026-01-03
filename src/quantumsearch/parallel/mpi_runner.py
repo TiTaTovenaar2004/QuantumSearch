@@ -203,20 +203,13 @@ def save_results(results, output_dir='results/data'):
             'estimation_time': result['estimation_time'],
         }
 
-        # Add estimated success probabilities
-        if result['estimated_success_probabilities']:
-            for j, est_result in enumerate(result['estimated_success_probabilities']):
-                save_data[f'rounds_{j}'] = est_result['rounds']
-                save_data[f'precision_{j}'] = est_result['precision']
-                save_data[f'confidence_{j}'] = est_result['confidence']
-                save_data[f'threshold_{j}'] = est_result['threshold']
-                save_data[f'lower_running_time_{j}'] = est_result['lower_running_time']
-                save_data[f'upper_running_time_{j}'] = est_result['upper_running_time']
-                # Save probabilities or estimated_locations depending on mode
-                if 'probabilities' in est_result:
-                    save_data[f'probabilities_{j}'] = est_result['probabilities']
-                if 'estimated_locations' in est_result:
-                    save_data[f'estimated_locations_{j}'] = est_result['estimated_locations']
+        # Add running times and success probabilities as arrays
+        if 'lower_running_times' in result:
+            save_data['lower_running_times'] = result['lower_running_times']
+        if 'upper_running_times' in result:
+            save_data['upper_running_times'] = result['upper_running_times']
+        if 'estimated_success_probabilities' in result:
+            save_data['estimated_success_probabilities'] = result['estimated_success_probabilities']
 
         # Save to .npz file
         np.savez(filepath, **save_data)
@@ -240,17 +233,8 @@ def save_results(results, output_dir='results/data'):
                 'simulation_time': float(r['simulation_time']),
                 'estimation_time': float(r['estimation_time']),
                 'num_time_points': len(r['times']),
-                'estimated_success_probabilities': [
-                    {
-                        'rounds': int(est['rounds']),
-                        'precision': float(est['precision']),
-                        'confidence': float(est['confidence']),
-                        'lower_running_time': float(est['lower_running_time']) if 'lower_running_time' in est else None,
-                        'upper_running_time': float(est['upper_running_time']) if 'upper_running_time' in est else None,
-                        'threshold': float(est['threshold']) if 'threshold' in est else None
-                    }
-                    for est in r['estimated_success_probabilities']
-                ] if r['estimated_success_probabilities'] else []
+                'lower_running_times': r['lower_running_times'].tolist() if 'lower_running_times' in r else [],
+                'upper_running_times': r['upper_running_times'].tolist() if 'upper_running_times' in r else []
             }
             for i, r in enumerate(results)
         ]
@@ -348,35 +332,16 @@ def load_results(input_dir='results/data', timestamp=None):
             'hopping_rate': float(data['hopping_rate']),
             'times': data['times'],
             'simulation_time': float(data['simulation_time']),
-            'estimation_time': float(data['estimation_time']),
-            'estimated_success_probabilities': []
+            'estimation_time': float(data['estimation_time'])
         }
 
-        # Extract estimated success probabilities
-        i = 0
-        while f'rounds_{i}' in data.keys():
-            est_result = {
-                'rounds': int(data[f'rounds_{i}']),
-                'precision': float(data[f'precision_{i}']),
-                'confidence': float(data[f'confidence_{i}'])
-            }
-
-            # Load probabilities or estimated_locations depending on what's available
-            if f'probabilities_{i}' in data.keys():
-                est_result['probabilities'] = data[f'probabilities_{i}']
-            if f'estimated_locations_{i}' in data.keys():
-                est_result['estimated_locations'] = data[f'estimated_locations_{i}']
-
-            # Load running time bounds if available
-            if f'lower_running_time_{i}' in data.keys():
-                est_result['lower_running_time'] = float(data[f'lower_running_time_{i}'])
-            if f'upper_running_time_{i}' in data.keys():
-                est_result['upper_running_time'] = float(data[f'upper_running_time_{i}'])
-            if f'threshold_{i}' in data.keys():
-                est_result['threshold'] = float(data[f'threshold_{i}'])
-
-            result['estimated_success_probabilities'].append(est_result)
-            i += 1
+        # Load running times and success probabilities as arrays
+        if 'lower_running_times' in data.keys():
+            result['lower_running_times'] = data['lower_running_times']
+        if 'upper_running_times' in data.keys():
+            result['upper_running_times'] = data['upper_running_times']
+        if 'estimated_success_probabilities' in data.keys():
+            result['estimated_success_probabilities'] = data['estimated_success_probabilities']
 
         results.append(result)
 
