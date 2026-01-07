@@ -28,33 +28,36 @@ def main():
     """
 
     # Define time points for simulations
-    times = np.linspace(0, 20, 100)
+    times = np.linspace(0, 20, 200)
 
     # Define task configurations
     task_configs = []
     for N in range(6, 7):
         for M in [2, 3, 4, 5]:
-            config = {
-                'graph_config': {
-                    'graph_type': 'complete',
-                    'N': N,
-                    'marked_vertex': 0,
-                },
-                'simulation_config': {
-                    'search_type': 'fermionic',
-                    'M': M,
-                    'hopping_rate': None
-                },
-                'times': times,
-                'estimation_config': {
-                    'number_of_rounds': [1, 2, 3, 4, 5, 6],
-                    'threshold': 0.8,
-                    'precision': 0.01,
-                    'confidence': 0.9999,
-                    'fast_mode': False
-                }
-            }
-            task_configs.append(config)
+            for p in range(0.3, 1, 0.05):
+                for _ in range(3):
+                    config = {
+                        'graph_config': {
+                            'graph_type': 'erdos-renyi',
+                            'N': N,
+                            'marked_vertex': 0,
+                            'p': p
+                        },
+                        'simulation_config': {
+                            'search_type': 'fermionic',
+                            'M': M,
+                            'hopping_rate': None
+                        },
+                        'times': times,
+                        'estimation_config': {
+                            'number_of_rounds': [1, 2, 3, 4, 5, 6],
+                            'threshold': 0.8,
+                            'precision': 0.01,
+                            'confidence': 0.9999,
+                            'fast_mode': True
+                        }
+                    }
+                    task_configs.append(config)
 
     print("=" * 60)
     print("PARALLEL QUANTUM SEARCH SIMULATIONS")

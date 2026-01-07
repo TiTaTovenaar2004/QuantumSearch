@@ -218,5 +218,5 @@ if __name__ == '__main__':
     #   results, summary = main(N=8, fast_mode=True)  # Combined filters
     #   results, summary = main(timestamp='20260103_145228')
 
-    results, summary = main(graph_type='erdos-renyi')
+    results, summary = main()
 
