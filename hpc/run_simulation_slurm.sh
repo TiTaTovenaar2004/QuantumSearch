@@ -12,7 +12,8 @@ module load 2025
 module load openmpi
 module load python
 
-cd ~/scratch/tbvangelder/quantumsearch/QuantumSearch
+cd $SLURM_SUBMIT_DIR
+cd QuantumSearch
 
 mkdir -p results/data   
 mkdir -p results/logs   
