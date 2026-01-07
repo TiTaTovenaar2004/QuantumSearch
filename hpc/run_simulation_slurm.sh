@@ -9,7 +9,10 @@
 #SBATCH --account=education-as-bsc-tn
 
 module load 2025
+module load openmpi
 module load python
-module load py-numpy
 
-srun python delftblue_test.py > test.log
+cd ~/QuantumSearch
+
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+srun python scripts/run_parallel_simulations.py > results/logs/simulation_${TIMESTAMP}.log 2>&1
