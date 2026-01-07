@@ -12,7 +12,7 @@ module load 2025
 module load openmpi
 module load python
 
-cd ~/QuantumSearch
+cd ~/scratch/tbvangelder/quantumsearch/QuantumSearch
 
 mkdir -p results/data   
 mkdir -p results/logs   
