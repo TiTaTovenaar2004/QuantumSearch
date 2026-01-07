@@ -14,5 +14,7 @@ module load python
 
 cd ~/QuantumSearch
 
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-srun python scripts/run_parallel_simulations.py > results/logs/simulation_${TIMESTAMP}.log 2>&1
+mkdir -p results/data   
+mkdir -p results/logs   
+
+srun python scripts/run_parallel_simulations.py > results/logs/simulation_$(date +%Y%m%d_%H%M%S).log 2>&1
