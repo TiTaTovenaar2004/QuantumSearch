@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from quantumsearch.parallel.mpi_runner import load_results
-from quantumsearch.plotting import plot_estimated_success_probabilities
+from quantumsearch.plotting import plot_estimated_success_probabilities, plot_rounds
 
 
 def display_summary(results, summary):
@@ -131,7 +131,8 @@ def filter_results(results, graph_type=None, N=None, M=None, search_type=None, h
     return filtered
 
 
-def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopping_rate=None, fast_mode=None):
+def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopping_rate=None, fast_mode=None,
+         plot_type='estimated_success_probabilities', main_round=2, rounds_plotted=None):
     """
     Main function to load and analyze results.
 
@@ -151,6 +152,12 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
         Filter by hopping rate. Use None or 'None' to find results where hopping_rate was None
     fast_mode : bool, optional
         Filter by fast_mode (True or False)
+    plot_type : str, optional
+        Type of plot to generate: 'estimated_success_probabilities' or 'rounds' (default: 'estimated_success_probabilities')
+    main_round : int, optional
+        For plot_type='rounds': reference number of rounds for x-axis (default: 2)
+    rounds_plotted : list of int, optional
+        For plot_type='rounds': list of round numbers to plot on y-axis (default: [2, 3, 4])
     """
 
     # Set data directory
@@ -189,13 +196,28 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
 
     # Generate plots
     if len(results) > 0:
-        print("\nGenerating plots...")
-        plot_estimated_success_probabilities(
-            results,
-            output_dir='results/plots',
-            timestamp=summary['timestamp'], 
-            plots_per_row=1
-        )
+        print(f"\nGenerating plots (plot_type='{plot_type}')...")
+
+        if plot_type == 'estimated_success_probabilities':
+            plot_estimated_success_probabilities(
+                results,
+                output_dir='results/plots',
+                timestamp=summary['timestamp'],
+                plots_per_row=1
+            )
+        elif plot_type == 'rounds':
+            if rounds_plotted is None:
+                rounds_plotted = [2, 3, 4]
+            plot_rounds(
+                results,
+                output_dir='results/plots',
+                timestamp=summary['timestamp'],
+                plots_per_row=1,
+                main_round=main_round,
+                rounds_plotted=rounds_plotted
+            )
+        else:
+            raise ValueError(f"Invalid plot_type '{plot_type}'. Must be 'estimated_success_probabilities' or 'rounds'.")
 
     print("\n" + "="*70)
     print("Data loaded successfully!")
@@ -218,6 +240,11 @@ if __name__ == '__main__':
     #   results, summary = main(fast_mode=False)  # Only slow mode results
     #   results, summary = main(N=8, fast_mode=True)  # Combined filters
     #   results, summary = main(timestamp='20260103_145228')
+    #
+    # To use different plot types:
+    #   results, summary = main(plot_type='estimated_success_probabilities')
+    #   results, summary = main(plot_type='rounds', main_round=2, rounds_plotted=[2, 3, 4])
+    #   results, summary = main(plot_type='rounds', main_round=3, rounds_plotted=[2, 3, 4, 5])
 
-    results, summary = main(graph_type='erdos-renyi')
+    results, summary = main(graph_type='erdos-renyi', plot_type='rounds', main_round=2, rounds_plotted=[2, 3, 4, 5])
 
