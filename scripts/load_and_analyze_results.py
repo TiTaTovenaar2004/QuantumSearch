@@ -193,7 +193,8 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
         plot_estimated_success_probabilities(
             results,
             output_dir='results/plots',
-            timestamp=summary['timestamp']
+            timestamp=summary['timestamp'], 
+            plots_per_row=1
         )
 
     print("\n" + "="*70)
@@ -218,5 +219,5 @@ if __name__ == '__main__':
     #   results, summary = main(N=8, fast_mode=True)  # Combined filters
     #   results, summary = main(timestamp='20260103_145228')
 
-    results, summary = main()
+    results, summary = main(graph_type='erdos-renyi')
 
