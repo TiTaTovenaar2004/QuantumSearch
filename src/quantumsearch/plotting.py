@@ -380,3 +380,174 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
     plt.close()
 
     print(f"Plot saved to: {filepath}")
+
+# --- Plot rounds comparison ---
+def plot_rounds(results, output_dir='results/plots', timestamp=None, plots_per_row=3, main_round=2, rounds_plotted=None):
+    """
+    Plot success probabilities as a function of number of rounds for multiple tasks.
+
+    Creates scatterplots showing the relationship between success probability at main_round
+    versus success probabilities at other rounds, for each time point.
+
+    Parameters:
+    -----------
+    results : list
+        List of result dictionaries from load_results, each containing:
+        - task_id, graph_type, N, search_type, M
+        - times: array of time points
+        - estimated_success_probabilities: 2D numpy array of shape (len(rounds), len(times))
+        - task_config['estimation_config']['number_of_rounds']: list of round numbers
+    output_dir : str
+        Directory to save plots
+    timestamp : str, optional
+        Timestamp string to include in filenames
+    plots_per_row : int, optional
+        Number of subplots to display per row
+    main_round : int, optional
+        The reference number of rounds for x-axis (default: 2)
+    rounds_plotted : list of int, optional
+        List of round numbers to plot on y-axis (default: [2, 3, 4])
+
+    Returns:
+    --------
+    None
+    """
+    import os
+    from collections import defaultdict
+
+    if rounds_plotted is None:
+        rounds_plotted = [2, 3, 4]
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Extract success_probabilities from each result and validate
+    for result in results:
+        if 'estimated_success_probabilities' not in result or result['estimated_success_probabilities'] is None:
+            raise ValueError(f"Task {result['task_id']}: No estimated success probabilities found.")
+
+        success_probs = result['estimated_success_probabilities']
+
+        # Check if success_probabilities is a numpy array
+        if not isinstance(success_probs, np.ndarray):
+            raise ValueError(f"Task {result['task_id']}: Success probabilities must be a numpy array.")
+
+        # Check if fast mode was used by looking for integer values (-1, 0, 1)
+        # Fast mode uses integers, slow mode uses floats between 0 and 1
+        unique_values = np.unique(success_probs)
+        if np.all(np.isin(unique_values, [-1, 0, 1])):
+            raise ValueError(f"Task {result['task_id']}: Success probabilities were calculated using fast mode. "
+                           "This function requires slow mode (fast_mode=False) to plot actual probability values.")
+
+        # Verify it's 2D
+        if success_probs.ndim != 2:
+            raise ValueError(f"Task {result['task_id']}: Success probabilities must be a 2D array of shape (rounds, times).")
+
+        # Validate that rounds information exists
+        if 'task_config' not in result or 'estimation_config' not in result['task_config']:
+            raise ValueError(f"Task {result['task_id']}: Missing task_config or estimation_config.")
+
+        if 'number_of_rounds' not in result['task_config']['estimation_config']:
+            raise ValueError(f"Task {result['task_id']}: Missing number_of_rounds in estimation_config.")
+
+    # Define colors for different rounds
+    colors = plt.cm.viridis(np.linspace(0, 0.9, len(rounds_plotted)))
+
+    # Create a separate figure for each result
+    saved_files = []
+    for result in results:
+        # Create a new figure for this result
+        fig, ax = plt.subplots(figsize=(8, 6))
+
+        times = result['times']
+        task_id = result['task_id']
+        graph_type = result['graph_type']
+        N_val = result['N']
+        search_type = result['search_type']
+        M = result['M']
+
+        # Extract success probabilities and rounds information
+        success_probs = result['estimated_success_probabilities']
+        number_of_rounds = result['task_config']['estimation_config']['number_of_rounds']
+
+        # Convert to list if single integer
+        if isinstance(number_of_rounds, int):
+            number_of_rounds = [number_of_rounds]
+
+        # Create mapping from round number to row index
+        rounds_to_idx = {r: idx for idx, r in enumerate(number_of_rounds)}
+
+        # Validate that main_round and rounds_plotted exist in the data
+        if main_round not in rounds_to_idx:
+            raise ValueError(f"Task {task_id}: main_round={main_round} not found in number_of_rounds={number_of_rounds}")
+
+        for r in rounds_plotted:
+            if r not in rounds_to_idx:
+                raise ValueError(f"Task {task_id}: round {r} from rounds_plotted not found in number_of_rounds={number_of_rounds}")
+
+        # Get the row index for main_round
+        main_round_idx = rounds_to_idx[main_round]
+
+        # For each time point (each column), create scatter points
+        for time_idx in range(len(times)):
+            # X-coordinate: success probability for main_round
+            x_val = success_probs[main_round_idx, time_idx]
+
+            # Y-coordinates: success probabilities for each round in rounds_plotted
+            for plot_idx, round_num in enumerate(rounds_plotted):
+                round_idx = rounds_to_idx[round_num]
+                y_val = success_probs[round_idx, time_idx]
+
+                # Plot the point
+                ax.scatter(x_val, y_val, color=colors[plot_idx], alpha=0.6, s=30)
+
+        # Add diagonal line y=x for reference
+        ax.plot([0, 1], [0, 1], 'k--', alpha=0.3, linewidth=1, label='y=x')
+
+        # Create legend for rounds
+        legend_handles = []
+        for plot_idx, round_num in enumerate(rounds_plotted):
+            legend_handles.append(plt.Line2D([0], [0], marker='o', color='w',
+                                             markerfacecolor=colors[plot_idx],
+                                             markersize=10, label=f'R={round_num}'))
+        ax.legend(handles=legend_handles, fontsize=11, loc='upper left')
+
+        ax.set_xlabel(f'Success Probability (R={main_round})', fontsize=12)
+        ax.set_ylabel('Success Probability (other rounds)', fontsize=12)
+
+        p = None
+        if 'task_config' in result and 'graph_config' in result['task_config']:
+            p = result['task_config']['graph_config'].get('p')
+
+        if p is not None and p > 0:
+            title = f'{search_type.capitalize()} search (M={M}) on the {graph_type} graph (N={N_val}, p={p})'
+        else:
+            title = f'{search_type.capitalize()} search (M={M}) on the {graph_type} graph (N={N_val})'
+
+        ax.set_title(title, fontsize=13, fontweight='bold')
+        ax.grid(True, alpha=0.3)
+        ax.set_xlim([0, 1])
+        ax.set_ylim([0, 1])
+
+        plt.tight_layout()
+
+        # Generate filename for this specific result
+        if timestamp:
+            filename = f'rounds_comparison_{search_type}_{graph_type}_N{N_val}_M{M}_{timestamp}.png'
+        else:
+            filename = f'rounds_comparison_{search_type}_{graph_type}_N{N_val}_M{M}.png'
+
+        # Add p value to filename if it exists
+        if p is not None and p > 0:
+            if timestamp:
+                filename = f'rounds_comparison_{search_type}_{graph_type}_N{N_val}_p{p}_M{M}_{timestamp}.png'
+            else:
+                filename = f'rounds_comparison_{search_type}_{graph_type}_N{N_val}_p{p}_M{M}.png'
+
+        filepath = os.path.join(output_dir, filename)
+        plt.savefig(filepath, dpi=150, bbox_inches='tight')
+        plt.close(fig)
+
+        saved_files.append(filepath)
+        print(f"Plot saved to: {filepath}")
+
+    print(f"\nTotal: {len(saved_files)} plot(s) saved.")
