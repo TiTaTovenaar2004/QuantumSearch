@@ -32,32 +32,8 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(5, 6):
-        for M in [2, 3, 4]:
-            config = {
-                'graph_config': {
-                    'graph_type': 'complete',
-                    'N': N,
-                    'marked_vertex': 0,
-                },
-                'simulation_config': {
-                    'search_type': 'bosonic',
-                    'M': M,
-                    'hopping_rate': None
-                },
-                'times': times,
-                'estimation_config': {
-                    'number_of_rounds': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-                    'threshold': 0.8,
-                    'precision': 0.01,
-                    'confidence': 0.9999,
-                    'fast_mode': False
-                }
-            }
-            task_configs.append(config)
-    
-    for N in range(5, 6):
-        for M in [2, 3, 4]:
+    for N in range(3, 10):
+        for M in range(2, N):
             config = {
                 'graph_config': {
                     'graph_type': 'complete',

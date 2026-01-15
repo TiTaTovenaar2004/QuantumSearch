@@ -246,5 +246,5 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='rounds', main_round=2, rounds_plotted=[2, 3, 4])
     #   results, summary = main(plot_type='rounds', main_round=3, rounds_plotted=[2, 3, 4, 5])
 
-    results, summary = main(graph_type='erdos-renyi', plot_type='rounds', main_round=2, rounds_plotted=[2, 3, 4, 5])
+    results, summary = main(timestamp='20260114_220049', search_type='fermionic', plot_type='estimated_success_probabilities')
 

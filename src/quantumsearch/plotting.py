@@ -198,6 +198,19 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
 
     os.makedirs(output_dir, exist_ok=True)
 
+    import matplotlib as mpl
+
+    BASE_FONT_SIZE = 13  # slightly larger than default
+
+    mpl.rcParams.update({
+        'font.size': BASE_FONT_SIZE,
+        'axes.titlesize': BASE_FONT_SIZE + 3,
+        'axes.labelsize': BASE_FONT_SIZE + 3,
+        'xtick.labelsize': BASE_FONT_SIZE,
+        'ytick.labelsize': BASE_FONT_SIZE,
+        'legend.fontsize': BASE_FONT_SIZE,
+    })
+
     # Sort results by: search_type (bosonic first), graph_type, N, p, then M
     def sort_key(result):
         # search_type: bosonic=0, fermionic=1 (so bosonic comes first)
@@ -251,7 +264,7 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
     fig, axes = plt.subplots(
         n_rows,
         n_cols,
-        figsize=(6 * base_cols, 4 * n_rows),
+        figsize=(6 * base_cols, 5 * n_rows),
         squeeze=False
     )
 
@@ -347,8 +360,8 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
                         ax.axhline(threshold_value, color='gray', linestyle='--',
                                    alpha=0.7, linewidth=1.5, label=f'Threshold={threshold_value}')
 
-            ax.set_xlabel('Time t', fontsize=10)
-            ax.set_ylabel('Success Probability', fontsize=10)
+            ax.set_xlabel('Time t')
+            ax.set_ylabel('Success Probability')
 
             p = None
             if 'task_config' in result and 'graph_config' in result['task_config']:
@@ -359,9 +372,9 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
             else:
                 title = f'{search_type.capitalize()} search (M={M}) on the {graph_type} graph (N={N_val})'
 
-            ax.set_title(title, fontsize=11, fontweight='bold')
+            ax.set_title(title, fontweight='bold')
             ax.grid(True, alpha=0.3)
-            ax.legend(fontsize=9, loc='upper right')
+            ax.legend(loc='upper right')
             ax.set_ylim([0, 1.05])
 
         # Hide unused subplots in this row
