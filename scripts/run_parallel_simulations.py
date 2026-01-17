@@ -32,7 +32,7 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(10, 14):
+    for N in range(10, 13):
         for M in range(2, N):
             config = {
                 'graph_config': {
