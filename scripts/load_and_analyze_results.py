@@ -139,7 +139,7 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
     Parameters:
     -----------
     timestamp : str, optional
-        Specific timestamp to load (format: YYYYMMDD_HHMMSS). If None, loads most recent.
+        Specific timestamp to load (format: YYYYMMDD_HHMMSS). If None, loads all available results.
     graph_type : str, optional
         Filter by graph type (e.g., 'complete', 'cycle', 'line')
     N : int, optional
@@ -159,14 +159,49 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
     rounds_plotted : list of int, optional
         For plot_type='rounds': list of round numbers to plot on y-axis (default: [2, 3, 4])
     """
+    import os
 
     # Set data directory
     data_dir = 'results/data'
 
     # Load results using the load_results function from mpi_runner
     print("Loading simulation results...")
-    results, summary = load_results(input_dir=data_dir, timestamp=timestamp)
-    print(f"Successfully loaded {len(results)} simulation results")
+
+    if timestamp is None:
+        # Load all results from all timestamps
+        if not os.path.exists(data_dir):
+            raise FileNotFoundError(f"Data directory not found: {data_dir}")
+
+        # Find all summary files
+        summary_files = [f for f in os.listdir(data_dir)
+                        if f.startswith('summary_') and f.endswith('.json')]
+
+        if not summary_files:
+            raise FileNotFoundError(f"No summary files found in {data_dir}")
+
+        # Extract timestamps from all summary files
+        timestamps = [f.replace('summary_', '').replace('.json', '') for f in summary_files]
+
+        print(f"Found {len(timestamps)} timestamp(s): {', '.join(timestamps)}")
+
+        # Load results from all timestamps
+        all_results = []
+        for ts in timestamps:
+            results_ts, _ = load_results(input_dir=data_dir, timestamp=ts)
+            all_results.extend(results_ts)
+            print(f"  Loaded {len(results_ts)} results from {ts}")
+
+        results = all_results
+        # Create a combined summary (use most recent for metadata)
+        _, summary = load_results(input_dir=data_dir, timestamp=sorted(timestamps, reverse=True)[0])
+        summary['timestamp'] = 'combined'
+        summary['total_tasks'] = len(results)
+
+        print(f"Successfully loaded {len(results)} simulation results from all timestamps")
+    else:
+        # Load results from specific timestamp
+        results, summary = load_results(input_dir=data_dir, timestamp=timestamp)
+        print(f"Successfully loaded {len(results)} simulation results from {timestamp}")
 
     # Apply filters if any are specified
     filter_applied = any([graph_type is not None, N is not None, M is not None,
@@ -254,5 +289,5 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='rounds', main_round=3, rounds_plotted=[2, 3, 4, 5])
     #   results, summary = main(plot_type='fermionic_runtimes')  # Plot fermionic runtimes vs N
 
-    results, summary = main(timestamp='20260115_145944', plot_type='fermionic_runtimes')
+    results, summary = main(search_type='fermionic', graph_type='complete', plot_type='estimated_success_probabilities')
 
