@@ -330,7 +330,7 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
                                     if best_idx == idx:
                                         ax.axvline(avg_t, color=colors[idx],
                                                    alpha=0.4, linewidth=2)
-                                        ax.text(avg_t, -0.1, f'R={rounds}', 
+                                        ax.text(avg_t, -0.1, f'R={rounds}',
                                             ha='center', va='top',
                                             fontsize=15, color='black')
                                     else:
@@ -581,3 +581,170 @@ def plot_rounds(results, output_dir='results/plots', timestamp=None, plots_per_r
         print(f"Plot saved to: {filepath}")
 
     print(f"\nTotal: {len(saved_files)} plot(s) saved.")
+
+# --- Plot fermionic runtimes ---
+def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None):
+    """
+    Plot fermionic runtimes as a function of N.
+
+    For each result, extracts the best running time (lowest average of lower and upper bounds)
+    and the corresponding M and R values. Then, for each N, selects the configuration with
+    the lowest running time and plots N vs running time with error intervals.
+
+    Parameters:
+    -----------
+    results : list
+        List of result dictionaries from load_results, each containing:
+        - N, M
+        - lower_running_times: array of lower runtime bounds
+        - upper_running_times: array of upper runtime bounds
+        - task_config['estimation_config']['number_of_rounds']: list of round numbers
+    output_dir : str
+        Directory to save plots
+    timestamp : str, optional
+        Timestamp string to include in filenames
+
+    Returns:
+    --------
+    None
+    """
+    import os
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    import matplotlib as mpl
+
+    BASE_FONT_SIZE = 13  # slightly larger than default
+
+    mpl.rcParams.update({
+        'font.size': BASE_FONT_SIZE,
+        'axes.titlesize': BASE_FONT_SIZE + 3,
+        'axes.labelsize': BASE_FONT_SIZE + 3,
+        'xtick.labelsize': BASE_FONT_SIZE,
+        'ytick.labelsize': BASE_FONT_SIZE,
+        'legend.fontsize': BASE_FONT_SIZE + 0.5,
+    })
+
+    # Step 1: Extract data from each result
+    all_data = []
+
+    for result in results:
+        N = result['N']
+        M = result['M']
+        lower_running_times = result['lower_running_times']
+        upper_running_times = result['upper_running_times']
+
+        # Get number_of_rounds from task_config
+        if 'task_config' in result and 'estimation_config' in result['task_config']:
+            number_of_rounds = result['task_config']['estimation_config']['number_of_rounds']
+            if isinstance(number_of_rounds, int):
+                number_of_rounds = [number_of_rounds]
+        else:
+            # Fallback
+            number_of_rounds = list(range(1, len(lower_running_times) + 1))
+
+        # Find the index with the lowest average running time
+        avg_running_times = 0.5 * (lower_running_times + upper_running_times)
+        best_idx = np.argmin(avg_running_times)
+
+        # Extract the best values
+        best_lower_rt = lower_running_times[best_idx]
+        best_upper_rt = upper_running_times[best_idx]
+        best_R = number_of_rounds[best_idx]
+
+        # Store in dictionary
+        data_dict = {
+            'N': N,
+            'M': M,
+            'R': best_R,
+            'lower_running_time': best_lower_rt,
+            'upper_running_time': best_upper_rt
+        }
+        all_data.append(data_dict)
+
+    # Step 2: For each N, find the configuration with the lowest average running time
+    from collections import defaultdict
+    data_by_N = defaultdict(list)
+
+    for data_dict in all_data:
+        data_by_N[data_dict['N']].append(data_dict)
+
+    best_data_by_N = []
+    for N, data_list in data_by_N.items():
+        # Find the entry with the lowest average running time
+        best_entry = min(data_list, key=lambda d: 0.5 * (d['lower_running_time'] + d['upper_running_time']))
+        best_data_by_N.append(best_entry)
+
+    # Step 3: Sort by N from low to high
+    best_data_by_N.sort(key=lambda d: d['N'])
+
+    # Step 4: Create the plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    N_values = [d['N'] for d in best_data_by_N]
+    lower_rts = [d['lower_running_time'] for d in best_data_by_N]
+    upper_rts = [d['upper_running_time'] for d in best_data_by_N]
+    avg_rts = [0.5 * (d['lower_running_time'] + d['upper_running_time']) for d in best_data_by_N]
+
+    # Plot the intervals as error bars
+    y_err_lower = np.array(avg_rts) - np.array(lower_rts)
+    y_err_upper = np.array(upper_rts) - np.array(avg_rts)
+
+    ax.errorbar(N_values, avg_rts, yerr=[y_err_lower, y_err_upper],
+                fmt='none', capsize=5, capthick=2,
+                color='steelblue', ecolor='steelblue',
+                label='Running time interval')
+
+    # Set y-axis to start from 0 and calculate the upper limit
+    max_upper_rt = max(upper_rts)
+    y_max = max_upper_rt * 1.25  # Add 25% margin at top
+    ax.set_ylim(bottom=0, top=y_max)
+
+    # Add text labels above each error bar (or below if it would go outside the plot)
+    text_offset = y_max * 0.03  # Fixed offset of 3% of y-axis range
+
+    for i, d in enumerate(best_data_by_N):
+        N = d['N']
+        M = d['M']
+        R = d['R']
+        upper_rt = d['upper_running_time']
+        lower_rt = d['lower_running_time']
+
+        # Calculate potential text position above the upper error bar
+        text_y_above = upper_rt + text_offset
+
+        # Check if text would go outside the plot (approximate height of 2-line text)
+        text_height_approx = y_max * 0.08  # Approximate 8% of plot height for 2 lines
+
+        if text_y_above + text_height_approx > y_max:
+            # Place text below the error bar
+            text_y = lower_rt - text_offset
+            va = 'top'
+        else:
+            # Place text above the error bar
+            text_y = text_y_above
+            va = 'bottom'
+
+        ax.text(N, text_y, f'M = {M}\nR = {R}',
+                ha='center', va=va,
+                fontsize=BASE_FONT_SIZE - 1,
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='white',
+                         edgecolor='gray', alpha=0.8))
+
+    ax.set_xlabel('Number of vertices N')
+    ax.set_ylabel('Running time')
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right')
+
+    plt.tight_layout()
+
+    if timestamp:
+        filename = f'fermionic_runtimes_{timestamp}.png'
+    else:
+        filename = 'fermionic_runtimes.png'
+
+    filepath = os.path.join(output_dir, filename)
+    plt.savefig(filepath, dpi=150, bbox_inches='tight')
+    plt.close()
+
+    print(f"Plot saved to: {filepath}")

@@ -2,7 +2,7 @@
 
 #SBATCH --job-name="Quantum_search"
 #SBATCH --time=02:20:00
-#SBATCH --ntasks=63
+#SBATCH --ntasks=38
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=compute
 #SBATCH --mem-per-cpu=2GB
@@ -15,7 +15,7 @@ module load python
 cd $SLURM_SUBMIT_DIR
 cd QuantumSearch
 
-mkdir -p results/data   
-mkdir -p results/logs   
+mkdir -p results/data
+mkdir -p results/logs
 
 srun python scripts/run_parallel_simulations.py > results/logs/simulation_$(date +%Y%m%d_%H%M%S).log 2>&1
