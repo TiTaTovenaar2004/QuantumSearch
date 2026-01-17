@@ -169,7 +169,7 @@ def plot_with_error(x, y, filename='results/plots/plot_with_error.png', shaded=T
     plt.close()
 
 # --- Plot estimated success probabilities for multiple tasks ---
-def plot_estimated_success_probabilities(results, output_dir='results/plots', timestamp=None, plots_per_row=3):
+def plot_estimated_success_probabilities(results, output_dir='results/plots', timestamp=None, plots_per_row=3, dashed_lines='all'):
     """
     Plot estimated success probabilities for each task in the results.
 
@@ -208,7 +208,7 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
         'axes.labelsize': BASE_FONT_SIZE + 3,
         'xtick.labelsize': BASE_FONT_SIZE,
         'ytick.labelsize': BASE_FONT_SIZE,
-        'legend.fontsize': BASE_FONT_SIZE,
+        'legend.fontsize': BASE_FONT_SIZE + 0.5,
     })
 
     # Sort results by: search_type (bosonic first), graph_type, N, p, then M
@@ -319,8 +319,25 @@ def plot_estimated_success_probabilities(results, output_dir='results/plots', ti
                             if not np.isinf(lower_rt):
                                 avg_rt = (lower_rt + upper_rt) / 2
                                 avg_t = avg_rt / rounds
-                                ax.axvline(avg_t, color=colors[idx], linestyle='--',
-                                           alpha=0.4, linewidth=1.5)
+
+                                if dashed_lines == 'all': # all dashed lines are colored
+                                    ax.axvline(avg_t, color=colors[idx], linestyle='--',
+                                            alpha=0.4, linewidth=1.5)
+                                elif dashed_lines == 'new_best': # only new best dashed lines are colored
+                                    ave_rts = (lower_rts + upper_rts) / 2
+                                    ave_rts_until_idx = ave_rts[:idx + 1]
+                                    best_idx = np.argmin(ave_rts_until_idx)
+                                    if best_idx == idx:
+                                        ax.axvline(avg_t, color=colors[idx],
+                                                   alpha=0.4, linewidth=2)
+                                        ax.text(avg_t, -0.1, f'R={rounds}', 
+                                            ha='center', va='top',
+                                            fontsize=15, color='black')
+                                    else:
+                                        ax.axvline(avg_t, color='gray', linestyle='--',
+                                                   alpha=0.2, linewidth=1.5)
+                                else:
+                                    raise ValueError("Invalid value for dashed_lines parameter.")
 
                         # Add threshold line
                         if threshold_value is not None:

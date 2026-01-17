@@ -203,7 +203,8 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
                 results,
                 output_dir='results/plots',
                 timestamp=summary['timestamp'],
-                plots_per_row=1
+                plots_per_row=1,
+                dashed_lines='new_best'
             )
         elif plot_type == 'rounds':
             if rounds_plotted is None:
@@ -246,5 +247,5 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='rounds', main_round=2, rounds_plotted=[2, 3, 4])
     #   results, summary = main(plot_type='rounds', main_round=3, rounds_plotted=[2, 3, 4, 5])
 
-    results, summary = main(timestamp='20260115_145944', plot_type='estimated_success_probabilities')
+    results, summary = main(timestamp='20260115_145944', M=2, N=4, plot_type='estimated_success_probabilities')
 
