@@ -583,13 +583,14 @@ def plot_rounds(results, output_dir='results/plots', timestamp=None, plots_per_r
     print(f"\nTotal: {len(saved_files)} plot(s) saved.")
 
 # --- Plot fermionic runtimes ---
-def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None):
+def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None, ignore_first_N=7, plot_fits=True):
     """
-    Plot fermionic runtimes as a function of N.
+    Plot fermionic runtimes as a function of N with optional power-law fits.
 
     For each result, extracts the best running time (lowest average of lower and upper bounds)
     and the corresponding M and R values. Then, for each N, selects the configuration with
-    the lowest running time and plots N vs running time with error intervals.
+    the lowest running time and plots N vs running time with error intervals. Optionally fits
+    three power-law models to the data.
 
     Parameters:
     -----------
@@ -603,12 +604,18 @@ def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None)
         Directory to save plots
     timestamp : str, optional
         Timestamp string to include in filenames
+    ignore_first_N : int, optional
+        Ignore data with N <= ignore_first_N for fitting (default: 7)
+    plot_fits : bool, optional
+        Whether to compute and plot power-law fits (default: True). When False, M and R
+        text labels are shown for each data point
 
     Returns:
     --------
     None
     """
     import os
+    from scipy.optimize import curve_fit
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -695,46 +702,101 @@ def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None)
                 color='steelblue', ecolor='steelblue',
                 label='Running time interval')
 
+    # Fit power-law models to the data if requested
+    if plot_fits:
+        N_fit_mask = np.array(N_values) > ignore_first_N
+        N_fit = np.array(N_values)[N_fit_mask]
+        avg_rts_fit = np.array(avg_rts)[N_fit_mask]
+
+        if len(N_fit) >= 2:  # Need at least 2 points to fit
+            # Define power-law functions
+            def power_law_1_3(N, alpha):
+                return alpha * N**(1/3)
+
+            def power_law_1_4(N, alpha):
+                return alpha * N**(1/4)
+
+            def power_law_beta(N, alpha, beta):
+                return alpha * N**beta
+
+            # Fit the models
+            try:
+                # Fit T_1 = alpha_1 * N^(1/3)
+                popt1, _ = curve_fit(power_law_1_3, N_fit, avg_rts_fit, p0=[1.0])
+                alpha_1 = popt1[0]
+                T_fit_1 = power_law_1_3(np.array(N_values), alpha_1)
+                rmse_1 = np.sqrt(np.mean((avg_rts_fit - power_law_1_3(N_fit, alpha_1))**2))
+
+                # Fit T_2 = alpha_2 * N^(1/4)
+                popt2, _ = curve_fit(power_law_1_4, N_fit, avg_rts_fit, p0=[1.0])
+                alpha_2 = popt2[0]
+                T_fit_2 = power_law_1_4(np.array(N_values), alpha_2)
+                rmse_2 = np.sqrt(np.mean((avg_rts_fit - power_law_1_4(N_fit, alpha_2))**2))
+
+                # Fit T_3 = alpha_3 * N^beta
+                popt3, _ = curve_fit(power_law_beta, N_fit, avg_rts_fit, p0=[1.0, 0.3])
+                alpha_3, beta = popt3
+                T_fit_3 = power_law_beta(np.array(N_values), alpha_3, beta)
+                rmse_3 = np.sqrt(np.mean((avg_rts_fit - power_law_beta(N_fit, alpha_3, beta))**2))
+
+                # Plot the fits
+                ax.plot(N_values, T_fit_1, '--', color='red', linewidth=2,
+                       label=f'$T_1 = {alpha_1:.3f} N^{{1/3}}$ (RMSE: {rmse_1:.3f})')
+                ax.plot(N_values, T_fit_2, '--', color='green', linewidth=2,
+                       label=f'$T_2 = {alpha_2:.3f} N^{{1/4}}$ (RMSE: {rmse_2:.3f})')
+                ax.plot(N_values, T_fit_3, '--', color='purple', linewidth=2,
+                       label=f'$T_3 = {alpha_3:.3f} N^{{{beta:.3f}}}$ (RMSE: {rmse_3:.3f})')
+
+                # Print fit parameters
+                print("\nPower-law fit results (using N > {} for fitting):".format(ignore_first_N))
+                print(f"  T_1 = {alpha_1:.6f} * N^(1/3),  RMSE = {rmse_1:.6f}")
+                print(f"  T_2 = {alpha_2:.6f} * N^(1/4),  RMSE = {rmse_2:.6f}")
+                print(f"  T_3 = {alpha_3:.6f} * N^{beta:.6f},  RMSE = {rmse_3:.6f}")
+
+            except Exception as e:
+                print(f"Warning: Could not fit power-law models: {e}")
+
     # Set y-axis to start from 0 and calculate the upper limit
     max_upper_rt = max(upper_rts)
     y_max = max_upper_rt * 1.25  # Add 25% margin at top
     ax.set_ylim(bottom=0, top=y_max)
 
-    # Add text labels above each error bar (or below if it would go outside the plot)
-    text_offset = y_max * 0.03  # Fixed offset of 3% of y-axis range
+    # Add text labels only when fits are not shown
+    if not plot_fits:
+        text_offset = y_max * 0.03  # Fixed offset of 3% of y-axis range
 
-    for i, d in enumerate(best_data_by_N):
-        N = d['N']
-        M = d['M']
-        R = d['R']
-        upper_rt = d['upper_running_time']
-        lower_rt = d['lower_running_time']
+        for i, d in enumerate(best_data_by_N):
+            N = d['N']
+            M = d['M']
+            R = d['R']
+            upper_rt = d['upper_running_time']
+            lower_rt = d['lower_running_time']
 
-        # Calculate potential text position above the upper error bar
-        text_y_above = upper_rt + text_offset
+            # Calculate potential text position above the upper error bar
+            text_y_above = upper_rt + text_offset
 
-        # Check if text would go outside the plot (approximate height of 2-line text)
-        text_height_approx = y_max * 0.08  # Approximate 8% of plot height for 2 lines
+            # Check if text would go outside the plot (approximate height of 2-line text)
+            text_height_approx = y_max * 0.08  # Approximate 8% of plot height for 2 lines
 
-        if text_y_above + text_height_approx > y_max:
-            # Place text below the error bar
-            text_y = lower_rt - text_offset
-            va = 'top'
-        else:
-            # Place text above the error bar
-            text_y = text_y_above
-            va = 'bottom'
+            if text_y_above + text_height_approx > y_max:
+                # Place text below the error bar
+                text_y = lower_rt - text_offset
+                va = 'top'
+            else:
+                # Place text above the error bar
+                text_y = text_y_above
+                va = 'bottom'
 
-        ax.text(N, text_y, f'M = {M}\nR = {R}',
-                ha='center', va=va,
-                fontsize=BASE_FONT_SIZE - 1,
-                bbox=dict(boxstyle='round,pad=0.3', facecolor='white',
-                         edgecolor='gray', alpha=0.8))
+            ax.text(N, text_y, f'M = {M}\nR = {R}',
+                    ha='center', va=va,
+                    fontsize=BASE_FONT_SIZE - 1,
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor='white',
+                             edgecolor='gray', alpha=0.8))
 
     ax.set_xlabel('Number of vertices N')
-    ax.set_ylabel('Running time')
+    ax.set_ylabel('Runtime t')
     ax.grid(True, alpha=0.3)
-    ax.legend(loc='upper right')
+    ax.legend(loc='best', fontsize=BASE_FONT_SIZE - 1)
 
     plt.tight_layout()
 
