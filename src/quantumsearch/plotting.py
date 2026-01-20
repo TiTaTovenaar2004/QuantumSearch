@@ -583,7 +583,7 @@ def plot_rounds(results, output_dir='results/plots', timestamp=None, plots_per_r
     print(f"\nTotal: {len(saved_files)} plot(s) saved.")
 
 # --- Plot fermionic runtimes ---
-def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None, ignore_first_N=7, plot_fits=True):
+def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None, ignore_first_N=7, plot_fits=False):
     """
     Plot fermionic runtimes as a function of N with optional power-law fits.
 

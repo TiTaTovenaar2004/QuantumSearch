@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name="Quantum_search"
-#SBATCH --time=06:00:00
+#SBATCH --time=12:00:00
 #SBATCH --ntasks=31
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=compute
