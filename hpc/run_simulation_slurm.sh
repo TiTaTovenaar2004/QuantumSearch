@@ -2,7 +2,7 @@
 
 #SBATCH --job-name="Quantum_search"
 #SBATCH --time=12:00:00
-#SBATCH --ntasks=31
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=compute
 #SBATCH --mem-per-cpu=2GB

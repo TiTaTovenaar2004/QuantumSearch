@@ -289,5 +289,5 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='rounds', main_round=3, rounds_plotted=[2, 3, 4, 5])
     #   results, summary = main(plot_type='fermionic_runtimes')  # Plot fermionic runtimes vs N
 
-    results, summary = main(search_type='fermionic', graph_type='complete', plot_type='fermionic_runtimes')
+    results, summary = main(plot_type='estimated_success_probabilities')
 

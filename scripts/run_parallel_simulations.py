@@ -32,7 +32,7 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(17, 19):
+    for N in range(3, 4):
         for M in range(2, N):
             config = {
                 'graph_config': {
@@ -47,7 +47,7 @@ def main():
                 },
                 'times': times,
                 'estimation_config': {
-                    'number_of_rounds': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                    'number_of_rounds': range(1, 25),
                     'threshold': 0.8,
                     'precision': 0.01,
                     'confidence': 0.9999,
