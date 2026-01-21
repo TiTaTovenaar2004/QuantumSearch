@@ -583,7 +583,7 @@ def plot_rounds(results, output_dir='results/plots', timestamp=None, plots_per_r
     print(f"\nTotal: {len(saved_files)} plot(s) saved.")
 
 # --- Plot fermionic runtimes ---
-def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None, ignore_first_N=7, plot_fits=False):
+def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None, ignore_first_N=9, plot_fits=False):
     """
     Plot fermionic runtimes as a function of N with optional power-law fits.
 
@@ -763,7 +763,7 @@ def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None,
 
     # Add text labels only when fits are not shown
     if not plot_fits:
-        text_offset = y_max * 0.03  # Fixed offset of 3% of y-axis range
+        text_offset = y_max * 0.06  # Fixed offset of 3% of y-axis range
 
         for i, d in enumerate(best_data_by_N):
             N = d['N']

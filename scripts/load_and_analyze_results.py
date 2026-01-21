@@ -239,7 +239,7 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
                 output_dir='results/plots',
                 timestamp=summary['timestamp'],
                 plots_per_row=1,
-                dashed_lines='new_best'
+                dashed_lines='all'
             )
         elif plot_type == 'rounds':
             if rounds_plotted is None:
@@ -289,5 +289,5 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='rounds', main_round=3, rounds_plotted=[2, 3, 4, 5])
     #   results, summary = main(plot_type='fermionic_runtimes')  # Plot fermionic runtimes vs N
 
-    results, summary = main(plot_type='estimated_success_probabilities')
+    results, summary = main(search_type='fermionic', graph_type='complete', plot_type='fermionic_runtimes')
 
