@@ -812,7 +812,7 @@ def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None,
     print(f"Plot saved to: {filepath}")
 
 # --- Plot of the runtime vs the hopping rate ---
-def plot_hopping_rate_runtimes(results, output_dir='results/plots'):
+def plot_hopping_rate_runtimes(results, output_dir='results/plots', include_R=True):
     """
     Plot runtimes as a function of the hopping rate.
 
@@ -858,6 +858,7 @@ def plot_hopping_rate_runtimes(results, output_dir='results/plots'):
     lower_rts = []
     upper_rts = []
     avg_rts = []
+    best_Rs = []
 
     # --- Step 1: extract best valid runtime per result ---
     for result in results:
@@ -865,14 +866,16 @@ def plot_hopping_rate_runtimes(results, output_dir='results/plots'):
         lower = np.asarray(result['lower_running_times'], dtype=float)
         upper = np.asarray(result['upper_running_times'], dtype=float)
 
-        # Mask invalid entries (threshold never reached)
+        number_of_rounds = result['task_config']['estimation_config']['number_of_rounds']
+
         valid_mask = np.isfinite(lower) & np.isfinite(upper)
         if not np.any(valid_mask):
-            continue  # no usable data for this result
+            continue
 
         lower_valid = lower[valid_mask]
         upper_valid = upper[valid_mask]
         avg_valid = 0.5 * (lower_valid + upper_valid)
+        rounds_valid = np.asarray(number_of_rounds)[valid_mask]
 
         best_idx = np.argmin(avg_valid)
 
@@ -880,6 +883,7 @@ def plot_hopping_rate_runtimes(results, output_dir='results/plots'):
         lower_rts.append(lower_valid[best_idx])
         upper_rts.append(upper_valid[best_idx])
         avg_rts.append(avg_valid[best_idx])
+        best_Rs.append(rounds_valid[best_idx])
 
     if len(hopping_rates) == 0:
         raise RuntimeError("No valid runtime data found for hopping-rate plot.")
@@ -889,12 +893,14 @@ def plot_hopping_rate_runtimes(results, output_dir='results/plots'):
     lower_rts = np.array(lower_rts)
     upper_rts = np.array(upper_rts)
     avg_rts = np.array(avg_rts)
+    best_Rs = np.array(best_Rs)
 
     sort_idx = np.argsort(hopping_rates)
     hopping_rates = hopping_rates[sort_idx]
     lower_rts = lower_rts[sort_idx]
     upper_rts = upper_rts[sort_idx]
     avg_rts = avg_rts[sort_idx]
+    best_Rs = best_Rs[sort_idx]
 
     # --- Step 3: plot ---
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -914,14 +920,68 @@ def plot_hopping_rate_runtimes(results, output_dir='results/plots'):
         label='Running time interval'
     )
 
-    ax.set_xlabel('Hopping rate')
+    # --- Vertical reference lines ---
+    gamma_chakraborty = 1.0 / 6.0
+    gamma_karthigeyan = 1.0 / 5.0
+
+    idx_min = np.argmin(avg_rts)
+    gamma_min = hopping_rates[idx_min]
+
+    ax.axvline(
+        gamma_chakraborty,
+        linestyle='--',
+        linewidth=2,
+        color='red',
+        alpha=0.8,
+        label=r'$\gamma_c$ (Chakraborty et al., 2020)'
+    )
+
+    ax.axvline(
+        gamma_karthigeyan,
+        linestyle='--',
+        linewidth=2,
+        color='green',
+        alpha=0.8,
+        label=r'$\gamma_c$ (Karthigeyan, 2025)'
+    )
+
+    ax.axvline(
+        gamma_min,
+        linestyle='--',
+        linewidth=2,
+        color='purple',
+        alpha=0.8,
+        label=rf'$\gamma_{{\min}} = {gamma_min:.3f}$'
+    )
+
+    # --- Optional R annotations ---
+    if include_R:
+        y_max = 1.25 * np.max(upper_rts)
+        text_offset = 0.05 * y_max
+
+        for x, upper, R in zip(hopping_rates, upper_rts, best_Rs):
+            ax.text(
+                x,
+                upper + text_offset,
+                f'{int(R)}',
+                ha='center',
+                va='bottom',
+                fontsize=BASE_FONT_SIZE - 1,
+                bbox=dict(
+                    boxstyle='round,pad=0.3',
+                    facecolor='white',
+                    edgecolor='gray',
+                    alpha=0.8
+                )
+            )
+
+    # --- Axes, grid, legend ---
+    ax.set_xlabel(r'Hopping rate $\gamma$')
     ax.set_ylabel('Runtime t')
 
-    max_upper_rt = np.max(upper_rts)
-    ax.set_ylim(bottom=0, top=1.25 * max_upper_rt)
-
+    ax.set_ylim(bottom=0, top=1.25 * np.max(upper_rts))
     ax.grid(True, alpha=0.3)
-    ax.legend(loc='best', fontsize=BASE_FONT_SIZE - 1)
+    ax.legend(loc='upper right', fontsize=BASE_FONT_SIZE - 1)
 
     plt.tight_layout()
 

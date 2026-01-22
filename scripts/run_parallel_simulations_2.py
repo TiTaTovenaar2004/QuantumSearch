@@ -34,7 +34,7 @@ def main():
     task_configs = []
     for N in range(5, 6):
         for M in range(2, 3):
-            for gamma in [0.11, 0.13, 0.19, 0.21, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30]:
+            for gamma in [0.31, 0.32, 0.33, 0.34, 0.35]:
                 config = {
                     'graph_config': {
                         'graph_type': 'complete',

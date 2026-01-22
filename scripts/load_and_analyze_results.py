@@ -295,5 +295,5 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='fermionic_runtimes')  # Plot fermionic runtimes vs N
     #   results, summary = main(plot_type='hopping_rate_runtimes')  # Plot runtimes vs hopping rate
 
-    results, summary = main(search_type='bosonic', graph_type='complete', N=5, M=2, plot_type='hopping_rate_runtimes')
+    results, summary = main(search_type='fermionic', graph_type='complete', N=5, M=2, plot_type='hopping_rate_runtimes')
 
