@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from quantumsearch.parallel.mpi_runner import load_results
-from quantumsearch.plotting import plot_estimated_success_probabilities, plot_rounds, plot_fermionic_runtimes
+from quantumsearch.plotting import plot_estimated_success_probabilities, plot_rounds, plot_fermionic_runtimes, plot_hopping_rate_runtimes
 
 
 def display_summary(results, summary):
@@ -153,7 +153,7 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
     fast_mode : bool, optional
         Filter by fast_mode (True or False)
     plot_type : str, optional
-        Type of plot to generate: 'estimated_success_probabilities', 'rounds', or 'fermionic_runtimes' (default: 'estimated_success_probabilities')
+        Type of plot to generate: 'estimated_success_probabilities', 'rounds', 'fermionic_runtimes', or 'hopping_rate_runtimes' (default: 'estimated_success_probabilities')
     main_round : int, optional
         For plot_type='rounds': reference number of rounds for x-axis (default: 2)
     rounds_plotted : list of int, optional
@@ -239,7 +239,7 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
                 output_dir='results/plots',
                 timestamp=summary['timestamp'],
                 plots_per_row=1,
-                dashed_lines='all'
+                dashed_lines='new_best'
             )
         elif plot_type == 'rounds':
             if rounds_plotted is None:
@@ -257,6 +257,11 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
                 results,
                 output_dir='results/plots',
                 timestamp=summary['timestamp']
+            )
+        elif plot_type == 'hopping_rate_runtimes':
+            plot_hopping_rate_runtimes(
+                results,
+                output_dir='results/plots'
             )
         else:
             raise ValueError(f"Invalid plot_type '{plot_type}'. Must be 'estimated_success_probabilities', 'rounds', or 'fermionic_runtimes'.")
@@ -288,6 +293,7 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='rounds', main_round=2, rounds_plotted=[2, 3, 4])
     #   results, summary = main(plot_type='rounds', main_round=3, rounds_plotted=[2, 3, 4, 5])
     #   results, summary = main(plot_type='fermionic_runtimes')  # Plot fermionic runtimes vs N
+    #   results, summary = main(plot_type='hopping_rate_runtimes')  # Plot runtimes vs hopping rate
 
-    results, summary = main(search_type='fermionic', graph_type='complete', plot_type='fermionic_runtimes')
+    results, summary = main(search_type='bosonic', graph_type='complete', N=5, M=2, plot_type='hopping_rate_runtimes')
 

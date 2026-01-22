@@ -810,3 +810,124 @@ def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None,
     plt.close()
 
     print(f"Plot saved to: {filepath}")
+
+# --- Plot of the runtime vs the hopping rate ---
+def plot_hopping_rate_runtimes(results, output_dir='results/plots'):
+    """
+    Plot runtimes as a function of the hopping rate.
+
+    For each result, extracts the hopping rate and the running time interval
+    (lower/upper) corresponding to the smallest average runtime. The data are
+    then sorted by hopping rate and plotted as an errorbar plot.
+
+    Parameters:
+    -----------
+    results : list
+        List of result dictionaries, each containing:
+        - hopping_rate
+        - lower_running_times : numpy array
+        - upper_running_times : numpy array
+        - task_config['estimation_config']['number_of_rounds'] (not used directly,
+          but assumed aligned with running time arrays)
+    output_dir : str
+        Directory to save plots
+
+    Returns:
+    --------
+    None
+    """
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # --- Styling (match fermionic plot style) ---
+    BASE_FONT_SIZE = 13
+    mpl.rcParams.update({
+        'font.size': BASE_FONT_SIZE,
+        'axes.titlesize': BASE_FONT_SIZE + 3,
+        'axes.labelsize': BASE_FONT_SIZE + 3,
+        'xtick.labelsize': BASE_FONT_SIZE,
+        'ytick.labelsize': BASE_FONT_SIZE,
+        'legend.fontsize': BASE_FONT_SIZE + 0.5,
+    })
+
+    hopping_rates = []
+    lower_rts = []
+    upper_rts = []
+    avg_rts = []
+
+    # --- Step 1: extract best valid runtime per result ---
+    for result in results:
+        hopping_rate = float(result['hopping_rate'])
+        lower = np.asarray(result['lower_running_times'], dtype=float)
+        upper = np.asarray(result['upper_running_times'], dtype=float)
+
+        # Mask invalid entries (threshold never reached)
+        valid_mask = np.isfinite(lower) & np.isfinite(upper)
+        if not np.any(valid_mask):
+            continue  # no usable data for this result
+
+        lower_valid = lower[valid_mask]
+        upper_valid = upper[valid_mask]
+        avg_valid = 0.5 * (lower_valid + upper_valid)
+
+        best_idx = np.argmin(avg_valid)
+
+        hopping_rates.append(hopping_rate)
+        lower_rts.append(lower_valid[best_idx])
+        upper_rts.append(upper_valid[best_idx])
+        avg_rts.append(avg_valid[best_idx])
+
+    if len(hopping_rates) == 0:
+        raise RuntimeError("No valid runtime data found for hopping-rate plot.")
+
+    # --- Step 2: sort by hopping rate ---
+    hopping_rates = np.array(hopping_rates)
+    lower_rts = np.array(lower_rts)
+    upper_rts = np.array(upper_rts)
+    avg_rts = np.array(avg_rts)
+
+    sort_idx = np.argsort(hopping_rates)
+    hopping_rates = hopping_rates[sort_idx]
+    lower_rts = lower_rts[sort_idx]
+    upper_rts = upper_rts[sort_idx]
+    avg_rts = avg_rts[sort_idx]
+
+    # --- Step 3: plot ---
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    y_err_lower = avg_rts - lower_rts
+    y_err_upper = upper_rts - avg_rts
+
+    ax.errorbar(
+        hopping_rates,
+        avg_rts,
+        yerr=[y_err_lower, y_err_upper],
+        fmt='none',
+        capsize=5,
+        capthick=2,
+        color='steelblue',
+        ecolor='steelblue',
+        label='Running time interval'
+    )
+
+    ax.set_xlabel('Hopping rate')
+    ax.set_ylabel('Runtime t')
+
+    max_upper_rt = np.max(upper_rts)
+    ax.set_ylim(bottom=0, top=1.25 * max_upper_rt)
+
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='best', fontsize=BASE_FONT_SIZE - 1)
+
+    plt.tight_layout()
+
+    filepath = os.path.join(output_dir, 'hopping_rate_runtimes.png')
+    plt.savefig(filepath, dpi=150, bbox_inches='tight')
+    plt.close()
+
+    print(f"Plot saved to: {filepath}")
+

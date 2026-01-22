@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#SBATCH --job-name="Q2"
+#SBATCH --job-name="QS_2"
 #SBATCH --time=03:59:00
-#SBATCH --ntasks=9
+#SBATCH --ntasks=12
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=compute
 #SBATCH --mem-per-cpu=2GB
