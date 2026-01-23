@@ -2,7 +2,7 @@
 
 #SBATCH --job-name="QS_2"
 #SBATCH --time=03:59:00
-#SBATCH --ntasks=5
+#SBATCH --ntasks=10
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=compute
 #SBATCH --mem-per-cpu=2GB

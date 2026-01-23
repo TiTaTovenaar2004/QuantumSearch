@@ -34,7 +34,7 @@ def main():
     task_configs = []
     for N in range(5, 6):
         for M in range(2, 3):
-            for gamma in [0.31, 0.32, 0.33, 0.34, 0.35]:
+            for gamma in [0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45]:
                 config = {
                     'graph_config': {
                         'graph_type': 'complete',
@@ -42,7 +42,7 @@ def main():
                         'marked_vertex': 0,
                     },
                     'simulation_config': {
-                        'search_type': 'fermionic',
+                        'search_type': 'bosonic',
                         'M': M,
                         'hopping_rate': gamma
                     },
