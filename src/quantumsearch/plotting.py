@@ -1134,3 +1134,142 @@ def plot_M_runtimes(results, output_dir='results/plots', include_R=True):
     plt.close()
 
     print(f"Plot saved to: {filepath}")
+
+def plot_graph_runtimes(results, output_dir='results/plots', characteristic=None):
+    """
+    Plot runtimes as a function of a graph characteristic, separated by search type.
+
+    For each result, extracts the best runtime (center of lower/upper interval),
+    applies the characteristic function to the graph, and creates a scatter plot
+    with bosonic (blue) and fermionic (red) results separated.
+
+    Parameters:
+    -----------
+    results : list
+        List of result dictionaries, each containing:
+        - search_type : 'bosonic' or 'fermionic'
+        - graph : NetworkX graph object
+        - lower_running_times : numpy array
+        - upper_running_times : numpy array
+        - task_config['estimation_config']['number_of_rounds']
+    output_dir : str
+        Directory to save plots
+    characteristic : callable
+        Function that takes a NetworkX graph and returns a float
+
+    Returns:
+    --------
+    None
+    """
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+
+    if characteristic is None:
+        raise ValueError("characteristic function must be provided")
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # --- Styling ---
+    BASE_FONT_SIZE = 13
+    mpl.rcParams.update({
+        'font.size': BASE_FONT_SIZE,
+        'axes.titlesize': BASE_FONT_SIZE + 3,
+        'axes.labelsize': BASE_FONT_SIZE + 3,
+        'xtick.labelsize': BASE_FONT_SIZE,
+        'ytick.labelsize': BASE_FONT_SIZE,
+        'legend.fontsize': BASE_FONT_SIZE + 0.5,
+    })
+
+    # Separate results by search type
+    bosonic_characteristics = []
+    bosonic_runtimes = []
+    fermionic_characteristics = []
+    fermionic_runtimes = []
+
+    # --- Extract data from each result ---
+    for result in results:
+        search_type = result['search_type']
+
+        # Check if graph is present
+        if 'graph' not in result:
+            print(f"Warning: No graph found in result, skipping...")
+            continue
+
+        graph = result['graph']
+        lower = np.asarray(result['lower_running_times'], dtype=float)
+        upper = np.asarray(result['upper_running_times'], dtype=float)
+
+        # Find valid (finite) runtimes
+        valid_mask = np.isfinite(lower) & np.isfinite(upper)
+        if not np.any(valid_mask):
+            continue
+
+        lower_valid = lower[valid_mask]
+        upper_valid = upper[valid_mask]
+        avg_valid = 0.5 * (lower_valid + upper_valid)
+
+        # Get the best (minimum average) runtime
+        best_idx = np.argmin(avg_valid)
+        runtime = avg_valid[best_idx]
+
+        # Apply characteristic function to graph
+        try:
+            char_value = characteristic(graph)
+        except Exception as e:
+            print(f"Warning: Failed to compute characteristic for result: {e}")
+            continue
+
+        # Store by search type
+        if search_type == 'bosonic':
+            bosonic_characteristics.append(char_value)
+            bosonic_runtimes.append(runtime)
+        elif search_type == 'fermionic':
+            fermionic_characteristics.append(char_value)
+            fermionic_runtimes.append(runtime)
+
+    # --- Create scatter plot ---
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Plot bosonic data (blue)
+    if len(bosonic_characteristics) > 0:
+        ax.scatter(
+            bosonic_characteristics,
+            bosonic_runtimes,
+            c='blue',
+            alpha=0.6,
+            s=50,
+            label='Bosonic'
+        )
+
+    # Plot fermionic data (red)
+    if len(fermionic_characteristics) > 0:
+        ax.scatter(
+            fermionic_characteristics,
+            fermionic_runtimes,
+            c='red',
+            alpha=0.6,
+            s=50,
+            label='Fermionic'
+        )
+
+    # --- Axes, grid, legend ---
+    ax.set_xlabel('Number of edges')
+    ax.set_ylabel('Runtime t')
+
+    ax.set_ylim(bottom=0)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='best', fontsize=BASE_FONT_SIZE)
+
+    plt.tight_layout()
+
+    # Save plot
+    characteristic_name = getattr(characteristic, '__name__', 'characteristic')
+    filepath = os.path.join(output_dir, f'graph_runtimes_{characteristic_name}.png')
+    plt.savefig(filepath, dpi=150, bbox_inches='tight')
+    plt.close()
+
+    print(f"Plot saved to: {filepath}")
+    print(f"  Bosonic points: {len(bosonic_characteristics)}")
+    print(f"  Fermionic points: {len(fermionic_characteristics)}")

@@ -12,7 +12,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from quantumsearch.parallel.mpi_runner import load_results
-from quantumsearch.plotting import plot_estimated_success_probabilities, plot_rounds, plot_fermionic_runtimes, plot_hopping_rate_runtimes, plot_M_runtimes
+from quantumsearch.plotting import plot_estimated_success_probabilities, plot_rounds, plot_fermionic_runtimes, plot_hopping_rate_runtimes, plot_M_runtimes, plot_graph_runtimes
+from quantumsearch.core.utils import get_number_of_edges
 
 
 def display_summary(results, summary):
@@ -135,7 +136,7 @@ def filter_results(results, graph_type=None, N=None, M=None, search_type=None, h
 
 
 def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopping_rate=None, fast_mode=None,
-         plot_type='estimated_success_probabilities', main_round=2, rounds_plotted=None):
+         plot_type='estimated_success_probabilities', main_round=2, rounds_plotted=None, graph_characteristic=None):
     """
     Main function to load and analyze results.
 
@@ -156,11 +157,13 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
     fast_mode : bool, optional
         Filter by fast_mode (True or False)
     plot_type : str, optional
-        Type of plot to generate: 'estimated_success_probabilities', 'rounds', 'fermionic_runtimes', 'hopping_rate_runtimes', or 'M_runtimes' (default: 'estimated_success_probabilities')
+        Type of plot to generate: 'estimated_success_probabilities', 'rounds', 'fermionic_runtimes', 'hopping_rate_runtimes', 'M_runtimes', or 'graph_runtimes' (default: 'estimated_success_probabilities')
     main_round : int, optional
         For plot_type='rounds': reference number of rounds for x-axis (default: 2)
     rounds_plotted : list of int, optional
         For plot_type='rounds': list of round numbers to plot on y-axis (default: [2, 3, 4])
+    graph_characteristic : callable, optional
+        For plot_type='graph_runtimes': function that takes a NetworkX graph and returns a float (default: get_number_of_edges)
     """
     import os
 
@@ -271,8 +274,16 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
                 results,
                 output_dir='results/plots'
             )
+        elif plot_type == 'graph_runtimes':
+            if graph_characteristic is None:
+                graph_characteristic = get_number_of_edges
+            plot_graph_runtimes(
+                results,
+                output_dir='results/plots',
+                characteristic=graph_characteristic
+            )
         else:
-            raise ValueError(f"Invalid plot_type '{plot_type}'. Must be 'estimated_success_probabilities', 'rounds', 'fermionic_runtimes', 'hopping_rate_runtimes', or 'M_runtimes'.")
+            raise ValueError(f"Invalid plot_type '{plot_type}'. Must be 'estimated_success_probabilities', 'rounds', 'fermionic_runtimes', 'hopping_rate_runtimes', 'M_runtimes', or 'graph_runtimes'.")
 
     print("\n" + "="*70)
     print("Data loaded successfully!")
@@ -304,6 +315,8 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='fermionic_runtimes')  # Plot fermionic runtimes vs N
     #   results, summary = main(plot_type='hopping_rate_runtimes')  # Plot runtimes vs hopping rate
     #   results, summary = main(plot_type='M_runtimes')  # Plot runtimes vs M (number of particles)
+    #   results, summary = main(plot_type='graph_runtimes')  # Plot runtimes vs graph characteristic (default: number of edges)
+    #   results, summary = main(plot_type='graph_runtimes', graph_characteristic=get_number_of_edges)  # With custom characteristic
 
     results, summary = main(search_type='fermionic', graph_type='complete', N=5, M=2, plot_type='hopping_rate_runtimes')
 
