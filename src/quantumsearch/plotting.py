@@ -583,7 +583,7 @@ def plot_rounds(results, output_dir='results/plots', timestamp=None, plots_per_r
     print(f"\nTotal: {len(saved_files)} plot(s) saved.")
 
 # --- Plot fermionic runtimes ---
-def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None, ignore_first_N=9, plot_fits=False):
+def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None, ignore_first_N=9, plot_fits=True):
     """
     Plot fermionic runtimes as a function of N with optional power-law fits.
 
@@ -709,49 +709,25 @@ def plot_fermionic_runtimes(results, output_dir='results/plots', timestamp=None,
         avg_rts_fit = np.array(avg_rts)[N_fit_mask]
 
         if len(N_fit) >= 2:  # Need at least 2 points to fit
-            # Define power-law functions
-            def power_law_1_3(N, alpha):
-                return alpha * N**(1/3)
-
-            def power_law_1_4(N, alpha):
-                return alpha * N**(1/4)
-
+            # Define power-law function
             def power_law_beta(N, alpha, beta):
                 return alpha * N**beta
 
-            # Fit the models
+            # Fit the model
             try:
-                # Fit T_1 = alpha_1 * N^(1/3)
-                popt1, _ = curve_fit(power_law_1_3, N_fit, avg_rts_fit, p0=[1.0])
-                alpha_1 = popt1[0]
-                T_fit_1 = power_law_1_3(np.array(N_values), alpha_1)
-                rmse_1 = np.sqrt(np.mean((avg_rts_fit - power_law_1_3(N_fit, alpha_1))**2))
+                # Fit T = alpha * N^beta
+                popt, _ = curve_fit(power_law_beta, N_fit, avg_rts_fit, p0=[1.0, 0.3])
+                alpha, beta = popt
+                T_fit = power_law_beta(np.array(N_values), alpha, beta)
+                rmse = np.sqrt(np.mean((avg_rts_fit - power_law_beta(N_fit, alpha, beta))**2))
 
-                # Fit T_2 = alpha_2 * N^(1/4)
-                popt2, _ = curve_fit(power_law_1_4, N_fit, avg_rts_fit, p0=[1.0])
-                alpha_2 = popt2[0]
-                T_fit_2 = power_law_1_4(np.array(N_values), alpha_2)
-                rmse_2 = np.sqrt(np.mean((avg_rts_fit - power_law_1_4(N_fit, alpha_2))**2))
-
-                # Fit T_3 = alpha_3 * N^beta
-                popt3, _ = curve_fit(power_law_beta, N_fit, avg_rts_fit, p0=[1.0, 0.3])
-                alpha_3, beta = popt3
-                T_fit_3 = power_law_beta(np.array(N_values), alpha_3, beta)
-                rmse_3 = np.sqrt(np.mean((avg_rts_fit - power_law_beta(N_fit, alpha_3, beta))**2))
-
-                # Plot the fits
-                ax.plot(N_values, T_fit_1, '--', color='red', linewidth=2,
-                       label=f'$T_1 = {alpha_1:.3f} N^{{1/3}}$ (RMSE: {rmse_1:.3f})')
-                ax.plot(N_values, T_fit_2, '--', color='green', linewidth=2,
-                       label=f'$T_2 = {alpha_2:.3f} N^{{1/4}}$ (RMSE: {rmse_2:.3f})')
-                ax.plot(N_values, T_fit_3, '--', color='purple', linewidth=2,
-                       label=f'$T_3 = {alpha_3:.3f} N^{{{beta:.3f}}}$ (RMSE: {rmse_3:.3f})')
+                # Plot the fit
+                ax.plot(N_values, T_fit, '--', color='purple', linewidth=2,
+                       label=f'$T = {alpha:.3f} N^{{{beta:.3f}}}$ (RMSE: {rmse:.3f})')
 
                 # Print fit parameters
                 print("\nPower-law fit results (using N > {} for fitting):".format(ignore_first_N))
-                print(f"  T_1 = {alpha_1:.6f} * N^(1/3),  RMSE = {rmse_1:.6f}")
-                print(f"  T_2 = {alpha_2:.6f} * N^(1/4),  RMSE = {rmse_2:.6f}")
-                print(f"  T_3 = {alpha_3:.6f} * N^{beta:.6f},  RMSE = {rmse_3:.6f}")
+                print(f"  T = {alpha:.6f} * N^{beta:.6f},  RMSE = {rmse:.6f}")
 
             except Exception as e:
                 print(f"Warning: Could not fit power-law models: {e}")
@@ -991,3 +967,170 @@ def plot_hopping_rate_runtimes(results, output_dir='results/plots', include_R=Tr
 
     print(f"Plot saved to: {filepath}")
 
+
+def plot_M_runtimes(results, output_dir='results/plots', include_R=True):
+    """
+    Plot runtimes as a function of the number of particles M.
+
+    For each result, extracts M and the running time interval (lower/upper)
+    corresponding to the smallest average runtime. The data are then sorted
+    by M and plotted as an errorbar plot. Only considers results with the
+    most abundant hopping_rate value.
+
+    Parameters:
+    -----------
+    results : list
+        List of result dictionaries, each containing:
+        - M : number of particles
+        - hopping_rate : hopping rate (used for filtering)
+        - lower_running_times : numpy array
+        - upper_running_times : numpy array
+        - task_config['estimation_config']['number_of_rounds']
+    output_dir : str
+        Directory to save plots
+
+    Returns:
+    --------
+    None
+    """
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+    from collections import Counter
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # --- Styling (match fermionic plot style) ---
+    BASE_FONT_SIZE = 13
+    mpl.rcParams.update({
+        'font.size': BASE_FONT_SIZE,
+        'axes.titlesize': BASE_FONT_SIZE + 3,
+        'axes.labelsize': BASE_FONT_SIZE + 3,
+        'xtick.labelsize': BASE_FONT_SIZE,
+        'ytick.labelsize': BASE_FONT_SIZE,
+        'legend.fontsize': BASE_FONT_SIZE + 0.5,
+    })
+
+    # --- Step 0: Filter by most abundant hopping_rate ---
+    hopping_rate_counts = Counter()
+    for result in results:
+        if 'hopping_rate' in result:
+            hopping_rate_counts[float(result['hopping_rate'])] += 1
+
+    if len(hopping_rate_counts) == 0:
+        raise RuntimeError("No hopping_rate found in results.")
+
+    most_common_hopping_rate = hopping_rate_counts.most_common(1)[0][0]
+    print(f"Filtering to hopping_rate = {most_common_hopping_rate} ({hopping_rate_counts[most_common_hopping_rate]} results)")
+
+    filtered_results = [
+        r for r in results
+        if 'hopping_rate' in r and abs(float(r['hopping_rate']) - most_common_hopping_rate) < 1e-9
+    ]
+
+    if len(filtered_results) == 0:
+        raise RuntimeError("No results remain after filtering by hopping_rate.")
+
+    M_values = []
+    lower_rts = []
+    upper_rts = []
+    avg_rts = []
+    best_Rs = []
+
+    # --- Step 1: extract best valid runtime per result ---
+    for result in filtered_results:
+        M = int(result['M'])
+        lower = np.asarray(result['lower_running_times'], dtype=float)
+        upper = np.asarray(result['upper_running_times'], dtype=float)
+
+        number_of_rounds = result['task_config']['estimation_config']['number_of_rounds']
+
+        valid_mask = np.isfinite(lower) & np.isfinite(upper)
+        if not np.any(valid_mask):
+            continue
+
+        lower_valid = lower[valid_mask]
+        upper_valid = upper[valid_mask]
+        avg_valid = 0.5 * (lower_valid + upper_valid)
+        rounds_valid = np.asarray(number_of_rounds)[valid_mask]
+
+        best_idx = np.argmin(avg_valid)
+
+        M_values.append(M)
+        lower_rts.append(lower_valid[best_idx])
+        upper_rts.append(upper_valid[best_idx])
+        avg_rts.append(avg_valid[best_idx])
+        best_Rs.append(rounds_valid[best_idx])
+
+    if len(M_values) == 0:
+        raise RuntimeError("No valid runtime data found for M plot.")
+
+    # --- Step 2: sort by M ---
+    M_values = np.array(M_values)
+    lower_rts = np.array(lower_rts)
+    upper_rts = np.array(upper_rts)
+    avg_rts = np.array(avg_rts)
+    best_Rs = np.array(best_Rs)
+
+    sort_idx = np.argsort(M_values)
+    M_values = M_values[sort_idx]
+    lower_rts = lower_rts[sort_idx]
+    upper_rts = upper_rts[sort_idx]
+    avg_rts = avg_rts[sort_idx]
+    best_Rs = best_Rs[sort_idx]
+
+    # --- Step 3: plot ---
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    y_err_lower = avg_rts - lower_rts
+    y_err_upper = upper_rts - avg_rts
+
+    ax.errorbar(
+        M_values,
+        avg_rts,
+        yerr=[y_err_lower, y_err_upper],
+        fmt='none',
+        capsize=5,
+        capthick=2,
+        color='steelblue',
+        ecolor='steelblue',
+        label='Running time interval'
+    )
+
+    # --- Optional R annotations ---
+    if include_R:
+        y_max = 1.25 * np.max(upper_rts)
+        text_offset = 0.05 * y_max
+
+        for x, upper, R in zip(M_values, upper_rts, best_Rs):
+            ax.text(
+                x,
+                upper + text_offset,
+                f'{int(R)}',
+                ha='center',
+                va='bottom',
+                fontsize=BASE_FONT_SIZE - 1,
+                bbox=dict(
+                    boxstyle='round,pad=0.3',
+                    facecolor='white',
+                    edgecolor='gray',
+                    alpha=0.8
+                )
+            )
+
+    # --- Axes, grid, legend ---
+    ax.set_xlabel('Number of particles M')
+    ax.set_ylabel('Runtime t')
+
+    ax.set_ylim(bottom=0, top=1.25 * np.max(upper_rts))
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right', fontsize=BASE_FONT_SIZE - 1)
+
+    plt.tight_layout()
+
+    filepath = os.path.join(output_dir, 'M_runtimes.png')
+    plt.savefig(filepath, dpi=150, bbox_inches='tight')
+    plt.close()
+
+    print(f"Plot saved to: {filepath}")

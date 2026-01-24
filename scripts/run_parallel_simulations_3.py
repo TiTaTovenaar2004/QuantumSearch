@@ -34,17 +34,19 @@ def main():
     task_configs = []
     for N in range(5, 6):
         for M in range(2, 3):
-            for gamma in [0.31, 0.32, 0.33, 0.34, 0.35]:
+            p_values = np.random.uniform(0.4, 1.0, 64).tolist()
+            for p in p_values:
                 config = {
                     'graph_config': {
-                        'graph_type': 'complete',
+                        'graph_type': 'erdos-renyi',
                         'N': N,
                         'marked_vertex': 0,
+                        'p': p
                     },
                     'simulation_config': {
-                        'search_type': 'bosonic',
+                        'search_type': 'fermionic',
                         'M': M,
-                        'hopping_rate': gamma
+                        'hopping_rate': None
                     },
                     'times': times,
                     'estimation_config': {

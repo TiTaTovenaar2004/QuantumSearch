@@ -130,6 +130,7 @@ def run_parallel_simulations(task_configs):
             'estimated_success_probabilities': estimation_result['success_probabilities'],
             'lower_running_times': estimation_result['lower_running_times'],
             'upper_running_times': estimation_result['upper_running_times'],
+            'graph': graph.graph,  # Store NetworkX graph object
             'status': 'completed'
         }
 
@@ -201,6 +202,7 @@ def save_results(results, output_dir='results/data'):
             'times': result['times'],
             'simulation_time': result['simulation_time'],
             'estimation_time': result['estimation_time'],
+            'graph': result['graph'],  # NetworkX graph object (will be pickled)
         }
 
         # Save task_config as JSON string if present
@@ -227,7 +229,7 @@ def save_results(results, output_dir='results/data'):
         if 'estimated_success_probabilities' in result:
             save_data['estimated_success_probabilities'] = result['estimated_success_probabilities']
 
-        # Save to .npz file
+        # Save to .npz file (allow_pickle for NetworkX graph object)
         np.savez(filepath, **save_data)
 
     # - Save summary/aggregate results
@@ -338,7 +340,7 @@ def load_results(input_dir='results/data', timestamp=None):
             print(f"Warning: File not found: {filename}")
             continue
 
-        data = np.load(filepath)
+        data = np.load(filepath, allow_pickle=True)
 
         # Extract data
         result = {
@@ -352,6 +354,10 @@ def load_results(input_dir='results/data', timestamp=None):
             'simulation_time': float(data['simulation_time']),
             'estimation_time': float(data['estimation_time'])
         }
+
+        # Load graph object if present
+        if 'graph' in data.keys():
+            result['graph'] = data['graph'].item()  # .item() extracts object from numpy array
 
         # Load task_config if present in npz file
         if 'task_config_json' in data.keys():

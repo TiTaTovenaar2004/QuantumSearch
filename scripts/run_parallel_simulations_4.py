@@ -32,29 +32,32 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(3, 4):
-        for M in range(2, N):
-            config = {
-                'graph_config': {
-                    'graph_type': 'complete',
-                    'N': N,
-                    'marked_vertex': 0,
-                },
-                'simulation_config': {
-                    'search_type': 'fermionic',
-                    'M': M,
-                    'hopping_rate': None
-                },
-                'times': times,
-                'estimation_config': {
-                    'number_of_rounds': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
-                    'threshold': 0.8,
-                    'precision': 0.01,
-                    'confidence': 0.9999,
-                    'fast_mode': False
+    for N in range(5, 6):
+        for M in range(2, 3):
+            p_values = np.random.uniform(0.4, 1.0, 64).tolist()
+            for p in p_values:
+                config = {
+                    'graph_config': {
+                        'graph_type': 'erdos-renyi',
+                        'N': N,
+                        'marked_vertex': 0,
+                        'p': p
+                    },
+                    'simulation_config': {
+                        'search_type': 'fermionic',
+                        'M': M,
+                        'hopping_rate': None
+                    },
+                    'times': times,
+                    'estimation_config': {
+                        'number_of_rounds': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                        'threshold': 0.8,
+                        'precision': 0.01,
+                        'confidence': 0.9999,
+                        'fast_mode': False
+                    }
                 }
-            }
-            task_configs.append(config)
+                task_configs.append(config)
 
     print("=" * 60)
     print("PARALLEL QUANTUM SEARCH SIMULATIONS")

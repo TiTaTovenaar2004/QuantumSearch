@@ -2,7 +2,7 @@
 
 #SBATCH --job-name="QS_2"
 #SBATCH --time=03:59:00
-#SBATCH --ntasks=10
+#SBATCH --ntasks=64
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=compute
 #SBATCH --mem-per-cpu=2GB
@@ -18,4 +18,4 @@ cd QuantumSearch
 mkdir -p results/data
 mkdir -p results/logs
 
-srun python scripts/run_parallel_simulations_2.py > results/logs/simulation_$(date +%Y%m%d_%H%M%S).log 2>&1
+srun python scripts/run_parallel_simulations_2.py > results/logs/simulation_2_$(date +%Y%m%d_%H%M%S).log 2>&1
