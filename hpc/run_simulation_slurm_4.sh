@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name="QS_4"
-#SBATCH --time=03:59:00
+#SBATCH --time=05:59:00
 #SBATCH --ntasks=64
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=compute
