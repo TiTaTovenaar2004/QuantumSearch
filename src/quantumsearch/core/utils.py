@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from qutip import *
+import networkx as nx
 
 # --- Sampling analysis ---
 # Calculate the necessary number of samples based on Hoeffding's inequality
@@ -130,3 +131,20 @@ def to_fock(fock_state, dim_per_site): # fock_state: [ [1, 0, 0], [0, 1, 0] ] =>
     state = tensor(basis(dim_per_site, i) for i in temp)
 
     return state
+
+# --- Graph analysis ---
+def get_number_of_edges(graph):
+    """
+    Get the number of edges in a NetworkX graph.
+
+    Parameters:
+    -----------
+    graph : networkx.Graph
+        A NetworkX graph object
+
+    Returns:
+    --------
+    int
+        The number of edges in the graph
+    """
+    return graph.number_of_edges()

@@ -32,7 +32,7 @@ def main():
 
     # Define task configurations
     task_configs = []
-    for N in range(5, 6):
+    for N in range(6, 7):
         for M in range(2, 3):
             p_values = np.random.uniform(0.4, 1.0, 64).tolist()
             for p in p_values:
