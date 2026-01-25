@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from quantumsearch.parallel.mpi_runner import load_results
 from quantumsearch.plotting import plot_estimated_success_probabilities, plot_rounds, plot_fermionic_runtimes, plot_hopping_rate_runtimes, plot_M_runtimes, plot_graph_runtimes
-from quantumsearch.core.utils import get_number_of_edges
+from quantumsearch.core.utils import get_number_of_edges, get_average_shortest_path_length, get_average_clustering, get_algebraic_connectivity
 
 
 def display_summary(results, summary):
@@ -142,8 +142,8 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
 
     Parameters:
     -----------
-    timestamp : str, optional
-        Specific timestamp to load (format: YYYYMMDD_HHMMSS). If None, loads all available results.
+    timestamp : str or list of str, optional
+        Specific timestamp(s) to load (format: YYYYMMDD_HHMMSS). Can be a single timestamp or list of timestamps. If None, loads all available results.
     graph_type : str, optional
         Filter by graph type (e.g., 'complete', 'cycle', 'line')
     N : int or list of int, optional
@@ -173,7 +173,15 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
     # Load results using the load_results function from mpi_runner
     print("Loading simulation results...")
 
+    # Normalize timestamp to list
     if timestamp is None:
+        timestamps_to_load = None
+    elif isinstance(timestamp, str):
+        timestamps_to_load = [timestamp]
+    else:
+        timestamps_to_load = list(timestamp)
+
+    if timestamps_to_load is None:
         # Load all results from all timestamps
         if not os.path.exists(data_dir):
             raise FileNotFoundError(f"Data directory not found: {data_dir}")
@@ -186,28 +194,25 @@ def main(timestamp=None, graph_type=None, N=None, M=None, search_type=None, hopp
             raise FileNotFoundError(f"No summary files found in {data_dir}")
 
         # Extract timestamps from all summary files
-        timestamps = [f.replace('summary_', '').replace('.json', '') for f in summary_files]
+        timestamps_to_load = [f.replace('summary_', '').replace('.json', '') for f in summary_files]
 
-        print(f"Found {len(timestamps)} timestamp(s): {', '.join(timestamps)}")
+    print(f"Found {len(timestamps_to_load)} timestamp(s): {', '.join(timestamps_to_load)}")
 
-        # Load results from all timestamps
-        all_results = []
-        for ts in timestamps:
-            results_ts, _ = load_results(input_dir=data_dir, timestamp=ts)
-            all_results.extend(results_ts)
-            print(f"  Loaded {len(results_ts)} results from {ts}")
+    # Load results from specified timestamps
+    all_results = []
+    for ts in timestamps_to_load:
+        results_ts, _ = load_results(input_dir=data_dir, timestamp=ts)
+        all_results.extend(results_ts)
+        print(f"  Loaded {len(results_ts)} results from {ts}")
 
-        results = all_results
-        # Create a combined summary (use most recent for metadata)
-        _, summary = load_results(input_dir=data_dir, timestamp=sorted(timestamps, reverse=True)[0])
+    results = all_results
+    # Create a combined summary (use most recent for metadata)
+    _, summary = load_results(input_dir=data_dir, timestamp=sorted(timestamps_to_load, reverse=True)[0])
+    if len(timestamps_to_load) > 1:
         summary['timestamp'] = 'combined'
-        summary['total_tasks'] = len(results)
+    summary['total_tasks'] = len(results)
 
-        print(f"Successfully loaded {len(results)} simulation results from all timestamps")
-    else:
-        # Load results from specific timestamp
-        results, summary = load_results(input_dir=data_dir, timestamp=timestamp)
-        print(f"Successfully loaded {len(results)} simulation results from {timestamp}")
+    print(f"Successfully loaded {len(results)} simulation results from {len(timestamps_to_load)} timestamp(s)")
 
     # Apply filters if any are specified
     filter_applied = any([graph_type is not None, N is not None, M is not None,
@@ -318,5 +323,5 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='graph_runtimes')  # Plot runtimes vs graph characteristic (default: number of edges)
     #   results, summary = main(plot_type='graph_runtimes', graph_characteristic=get_number_of_edges)  # With custom characteristic
 
-    results, summary = main(graph_type='erdos-renyi', N=6, M=2, plot_type='graph_runtimes')
+    results, summary = main(graph_type='erdos-renyi', N=6, M=2, plot_type='graph_runtimes', graph_characteristic=get_algebraic_connectivity, timestamp=['20260125_123753', '20260125_123942', '20260125_124038', '20260125_124243'])
 

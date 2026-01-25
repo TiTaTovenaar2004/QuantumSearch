@@ -148,3 +148,59 @@ def get_number_of_edges(graph):
         The number of edges in the graph
     """
     return graph.number_of_edges()
+
+def get_average_shortest_path_length(graph):
+    """
+    Get the average shortest path length in a NetworkX graph.
+
+    Parameters:
+    -----------
+    graph : networkx.Graph
+        A NetworkX graph object
+
+    Returns:
+    --------
+    float
+        The average shortest path length between all pairs of nodes
+    """
+    import networkx as nx
+    return nx.average_shortest_path_length(graph)
+
+
+def get_average_clustering(graph):
+    """
+    Get the average clustering coefficient in a NetworkX graph.
+
+    Parameters:
+    -----------
+    graph : networkx.Graph
+        A NetworkX graph object
+
+    Returns:
+    --------
+    float
+        The average clustering coefficient
+    """
+    import networkx as nx
+    return nx.average_clustering(graph)
+
+
+def get_algebraic_connectivity(graph):
+    """
+    Get the algebraic connectivity (Fiedler value) of a NetworkX graph.
+
+    The algebraic connectivity is the second smallest eigenvalue of the
+    Laplacian matrix. It measures how well connected the graph is.
+
+    Parameters:
+    -----------
+    graph : networkx.Graph
+        A NetworkX graph object
+
+    Returns:
+    --------
+    float
+        The algebraic connectivity of the graph
+    """
+    import networkx as nx
+    return nx.algebraic_connectivity(graph)

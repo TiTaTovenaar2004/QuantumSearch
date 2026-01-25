@@ -1231,43 +1231,55 @@ def plot_graph_runtimes(results, output_dir='results/plots', characteristic=None
             fermionic_characteristics.append(char_value)
             fermionic_runtimes.append(runtime)
 
-    # --- Create scatter plot ---
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # --- Create figure with two subplots side by side ---
+    fig, (ax_bosonic, ax_fermionic) = plt.subplots(1, 2, figsize=(16, 6))
 
-    # Plot bosonic data (blue)
+    # Generate x-axis label from characteristic function name
+    characteristic_name = getattr(characteristic, '__name__', 'characteristic')
+
+    # Create readable label from function name
+    xlabel_map = {
+        'get_number_of_edges': 'Number of edges',
+        'get_average_shortest_path_length': 'Average shortest path length',
+        'get_average_clustering': 'Average clustering coefficient',
+        'get_algebraic_connectivity': 'Algebraic connectivity'
+    }
+
+    xlabel = xlabel_map.get(characteristic_name, characteristic_name.replace('_', ' ').replace('get ', '').capitalize())
+
+    # --- Left subplot: Bosonic ---
     if len(bosonic_characteristics) > 0:
-        ax.scatter(
+        ax_bosonic.scatter(
             bosonic_characteristics,
             bosonic_runtimes,
             c='blue',
             alpha=0.6,
-            s=50,
-            label='Bosonic'
+            s=50
         )
+    ax_bosonic.set_xlabel(xlabel, fontsize=BASE_FONT_SIZE + 3)
+    ax_bosonic.set_ylabel('Runtime t', fontsize=BASE_FONT_SIZE + 3)
+    ax_bosonic.set_title('Bosonic', fontsize=BASE_FONT_SIZE + 3)
+    ax_bosonic.set_ylim(bottom=0)
+    ax_bosonic.grid(True, alpha=0.3)
 
-    # Plot fermionic data (red)
+    # --- Right subplot: Fermionic ---
     if len(fermionic_characteristics) > 0:
-        ax.scatter(
+        ax_fermionic.scatter(
             fermionic_characteristics,
             fermionic_runtimes,
             c='red',
             alpha=0.6,
-            s=50,
-            label='Fermionic'
+            s=50
         )
-
-    # --- Axes, grid, legend ---
-    ax.set_xlabel('Number of edges')
-    ax.set_ylabel('Runtime t')
-
-    ax.set_ylim(bottom=0)
-    ax.grid(True, alpha=0.3)
-    ax.legend(loc='best', fontsize=BASE_FONT_SIZE)
+    ax_fermionic.set_xlabel(xlabel, fontsize=BASE_FONT_SIZE + 3)
+    ax_fermionic.set_ylabel('Runtime t', fontsize=BASE_FONT_SIZE + 3)
+    ax_fermionic.set_title('Fermionic', fontsize=BASE_FONT_SIZE + 3)
+    ax_fermionic.set_ylim(bottom=0)
+    ax_fermionic.grid(True, alpha=0.3)
 
     plt.tight_layout()
 
     # Save plot
-    characteristic_name = getattr(characteristic, '__name__', 'characteristic')
     filepath = os.path.join(output_dir, f'graph_runtimes_{characteristic_name}.png')
     plt.savefig(filepath, dpi=150, bbox_inches='tight')
     plt.close()
