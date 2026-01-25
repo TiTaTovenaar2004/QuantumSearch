@@ -12,6 +12,7 @@ except ImportError:
     MPI = None
 
 import numpy as np
+import networkx as nx
 from quantumsearch.core.simulation import Simulation
 from quantumsearch.core.graph import Graph
 
@@ -131,6 +132,8 @@ def run_parallel_simulations(task_configs):
             'lower_running_times': estimation_result['lower_running_times'],
             'upper_running_times': estimation_result['upper_running_times'],
             'graph': graph.graph,  # Store NetworkX graph object
+            'adjacency_matrix': nx.to_numpy_array(graph.graph),  # Store adjacency matrix for reconstruction
+            'number_of_edges': graph.graph.number_of_edges(),  # Store edge count for plotting
             'status': 'completed'
         }
 
@@ -202,7 +205,8 @@ def save_results(results, output_dir='results/data'):
             'times': result['times'],
             'simulation_time': result['simulation_time'],
             'estimation_time': result['estimation_time'],
-            'graph': result['graph'],  # NetworkX graph object (will be pickled)
+            'adjacency_matrix': result.get('adjacency_matrix'),  # Save adjacency matrix instead of graph
+            'number_of_edges': result.get('number_of_edges'),
         }
 
         # Save task_config as JSON string if present
@@ -355,9 +359,29 @@ def load_results(input_dir='results/data', timestamp=None):
             'estimation_time': float(data['estimation_time'])
         }
 
-        # Load graph object if present
-        if 'graph' in data.keys():
-            result['graph'] = data['graph'].item()  # .item() extracts object from numpy array
+        # Load number of edges if present
+        if 'number_of_edges' in data.keys():
+            result['number_of_edges'] = int(data['number_of_edges'])
+
+        # Reconstruct NetworkX graph from adjacency matrix
+        if 'adjacency_matrix' in data.keys():
+            adjacency_matrix = data['adjacency_matrix']
+            result['graph'] = nx.from_numpy_array(adjacency_matrix)
+        # Fallback: try to load graph object if present (for old data files)
+        elif 'graph' in data.keys():
+            # Handle different storage formats for graph object
+            graph_data = data['graph']
+            # Numpy stores pickled objects as 0-dimensional arrays
+            if isinstance(graph_data, np.ndarray):
+                # Use [()] indexing to extract object from 0-d array, or .item() for 1-element array
+                if graph_data.ndim == 0:
+                    result['graph'] = graph_data.item()  # or graph_data[()]
+                elif graph_data.size == 1:
+                    result['graph'] = graph_data.item()
+                else:
+                    result['graph'] = graph_data
+            else:
+                result['graph'] = graph_data  # Already in the correct format
 
         # Load task_config if present in npz file
         if 'task_config_json' in data.keys():

@@ -318,5 +318,5 @@ if __name__ == '__main__':
     #   results, summary = main(plot_type='graph_runtimes')  # Plot runtimes vs graph characteristic (default: number of edges)
     #   results, summary = main(plot_type='graph_runtimes', graph_characteristic=get_number_of_edges)  # With custom characteristic
 
-    results, summary = main(search_type='fermionic', graph_type='complete', N=5, M=2, plot_type='hopping_rate_runtimes')
+    results, summary = main(graph_type='erdos-renyi', N=6, M=2, plot_type='graph_runtimes')
 

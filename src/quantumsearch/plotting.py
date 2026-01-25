@@ -1192,12 +1192,6 @@ def plot_graph_runtimes(results, output_dir='results/plots', characteristic=None
     for result in results:
         search_type = result['search_type']
 
-        # Check if graph is present
-        if 'graph' not in result:
-            print(f"Warning: No graph found in result, skipping...")
-            continue
-
-        graph = result['graph']
         lower = np.asarray(result['lower_running_times'], dtype=float)
         upper = np.asarray(result['upper_running_times'], dtype=float)
 
@@ -1214,11 +1208,19 @@ def plot_graph_runtimes(results, output_dir='results/plots', characteristic=None
         best_idx = np.argmin(avg_valid)
         runtime = avg_valid[best_idx]
 
-        # Apply characteristic function to graph
-        try:
-            char_value = characteristic(graph)
-        except Exception as e:
-            print(f"Warning: Failed to compute characteristic for result: {e}")
+        # Get characteristic value
+        # First try to use pre-computed number_of_edges if available
+        if 'number_of_edges' in result and characteristic.__name__ == 'get_number_of_edges':
+            char_value = result['number_of_edges']
+        # Otherwise try to compute from graph
+        elif 'graph' in result:
+            try:
+                char_value = characteristic(result['graph'])
+            except Exception as e:
+                print(f"Warning: Failed to compute characteristic for result: {e}")
+                continue
+        else:
+            print(f"Warning: No graph or number_of_edges found in result, skipping...")
             continue
 
         # Store by search type
